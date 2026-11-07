@@ -238,6 +238,35 @@
   button.link{border:none;background:none;color:#C0392B;font:inherit;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;margin-left:10px}
   .cabox{display:flex !important;flex-direction:row !important;align-items:flex-start;gap:8px;background:#FFF4EE;border:1px solid #F2B79B;border-radius:6px;padding:8px 10px;margin:4px 0 10px !important;font-weight:500 !important;color:#7A2E10 !important}
   #canvasCA .card .lbl{letter-spacing:.5px;font-size:11.5px;white-space:nowrap}
+  /* Corrective Actions layout B */
+  #canvasCA .cacounts{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(20,40,75,.10);display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;padding:9px 12px}
+  #canvasCA .cacounts div{display:flex;flex-direction:column;justify-content:center;min-width:0}
+  #canvasCA .cacounts b{font-size:22px;font-weight:800;line-height:1.05;color:#D64550;font-variant-numeric:tabular-nums}
+  #canvasCA .cacounts div:nth-child(2) b{color:#118DFF} #canvasCA .cacounts div:nth-child(3) b{color:#744EC2} #canvasCA .cacounts div:nth-child(4) b{color:#1AAB40}
+  #canvasCA .cacounts span{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#5A6478}
+  #canvasCA .cacard{background:#fff;padding:7px 9px;border-radius:6px;box-shadow:0 1px 3px rgba(20,40,75,.10);border-top:3px solid var(--navy2);overflow:hidden}
+  #canvasCA .cacard.active{border-top-color:var(--orange)}
+  #canvasCA .cah{font-size:12px;font-weight:700;color:var(--navy);letter-spacing:.3px;margin-bottom:7px;white-space:nowrap}
+  #canvasCA .cah small{font-weight:600;color:#7A8597;letter-spacing:0;margin-left:4px}
+  #canvasCA .cachips{display:flex;flex-wrap:wrap;gap:5px}
+  #canvasCA .cachip{font:inherit;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:12px;border:1.5px solid var(--c);color:var(--c);background:#fff;cursor:pointer;white-space:nowrap}
+  #canvasCA .cachip b{font-weight:800}
+  #canvasCA .cachip:hover{background:color-mix(in srgb,var(--c) 12%,#fff)}
+  #canvasCA .cachip.on{background:var(--c);color:#fff}
+  #canvasCA .cachip.off{opacity:.55}
+  #canvasCA .camonth svg{display:block}
+  #canvasCA .camonth .mv{font-size:9.5px;font-weight:700;fill:#14284B}
+  #canvasCA .camonth .ml{font-size:9.5px;fill:#5A6478}
+  #canvasCA .camonth .empty{font-size:12px;color:#7A8597;padding:30px 0;text-align:center}
+  #canvasCA .cabtns{display:flex;gap:8px;align-items:stretch}
+  #canvasCA .cabtns button{flex:1;font:inherit;font-size:13px;font-weight:700;border-radius:6px;cursor:pointer}
+  #canvasCA .caclear{background:#fff;color:#C62828;border:1.5px solid #E57373}
+  #canvasCA .caclear:hover{background:#FFEBEE}
+  #canvasCA .caexport{background:#14284B;color:#fff;border:1.5px solid #14284B}
+  #canvasCA .caexport:hover{background:#1F4E8C}
+  #canvasCA .caexport:disabled{opacity:.6;cursor:default}
+  #canvasCA .docnum.tot{color:#14284B}
+  #canvasCA .tbl .scroller{overflow-x:auto}
   .tbl tfoot td{position:sticky;bottom:0;background:#E8EEF7;font-weight:800;color:#14284B;border-top:2px solid #14284B}
   .abody label.primary{color:#fff !important;font-size:14px;font-weight:700}
   .abody label.primary:hover{color:#fff !important}
@@ -1470,24 +1499,22 @@ const CA_ICONS={
   mgr:'<svg viewBox="0 0 24 24"><path d="M12 2a4 4 0 1 1-4 4 4 4 0 0 1 4-4zm-1 11h2l1 2-1.3 5h-1.4L10 15zm-1.6.2L11 20H4v-2c0-2.1 3.1-3.5 5.4-4.8zm5.2 0c2.3 1.3 5.4 2.7 5.4 4.8v2h-7z"/></svg>',
   type:'<svg viewBox="0 0 24 24"><path d="M21.4 11.6l-9-9A2 2 0 0 0 11 2H4a2 2 0 0 0-2 2v7a2 2 0 0 0 .6 1.4l9 9a2 2 0 0 0 2.8 0l7-7a2 2 0 0 0 0-2.8zM6.5 8A1.5 1.5 0 1 1 8 6.5 1.5 1.5 0 0 1 6.5 8z"/></svg>'
 };
-function caKpi(x,accent,tint,icon,label){
-  const el=cbox('card',x,97,311,88,1000,'<div class="ico">'+CA_ICONS[icon]+'</div><div class="txt"><div class="val">0</div><div class="lbl">'+label+'</div></div>');
-  el.style.setProperty('--accent',accent); el.style.setProperty('--tint',tint); return el.querySelector('.val');
-}
-const caCard={total:caKpi(5,'#D64550','#FCE8EA','total','Total Corrective Actions'),
-              emp:caKpi(324,'#118DFF','#E3F1FF','emp','Distinct Employee Count'),
-              mgr:caKpi(643,'#744EC2','#EFE9FA','mgr','Distinct Manager Count'),
-              type:caKpi(962,'#E66C37','#FDEDE5','type','Distinct Status Count')};
-cbox('band',5,193,1270,104,4000);
+/* Layout B: left sidebar (counts, filters, action-type chips, month trend, buttons); the table fills the rest.
+   Positions are screen pixels; Y() undoes cbox's header shift. */
+const Y=y=>y+SHIFT;
+const caCountsEl=cbox('cacounts',5,Y(68),240,84,1000,
+  '<div><b class="k1">0</b><span>Actions</span></div><div><b class="k2">0</b><span>Employees</span></div>'+
+  '<div><b class="k3">0</b><span>Managers</span></div><div title="Share of these employees whose account is still active (status A)"><b class="k4">–</b><span>Still active</span></div>');
+const caCard={total:caCountsEl.querySelector('.k1'),emp:caCountsEl.querySelector('.k2'),mgr:caCountsEl.querySelector('.k3'),active:caCountsEl.querySelector('.k4')};
 
 /* dropdown slicers (same look/behaviour as the T&D slicers) */
 const CA_SL={};
-function caSlicer(id,label,x,w,z){
-  const el=cbox('slicer',x,207,w,77,z,'<div class="shdr"><span>'+esc(label)+'</span><button class="clr" title="Clear selections">✕</button></div><div class="dd"><span>All</span></div>');
+function caSlicer(id,label,x,y,w,h,z){
+  const el=cbox('slicer',x,Y(y),w,h,z,'<div class="shdr"><span>'+esc(label)+'</span><button class="clr" title="Clear selections">✕</button></div><div class="dd"><span>All</span></div>');
   const pop=document.createElement('div'); pop.className='pop'; pop.innerHTML='<input class="search" placeholder="Search"><div class="list"></div>'; CC.appendChild(pop);
   const sl={id,el,pop,items:[],search:''}; CA_SL[id]=sl;
   el.querySelector('.dd').addEventListener('click',e=>{e.stopPropagation(); const open=!pop.classList.contains('open'); closePops(); if(open){
-    const left=parseFloat(el.style.left), top=parseFloat(el.style.top)+77, pw=Math.max(w,240);
+    const left=parseFloat(el.style.left), top=parseFloat(el.style.top)+h, pw=Math.max(w,240);
     Object.assign(pop.style,{left:Math.min(left,1280-pw-4)+'px',top:top+'px',width:pw+'px'}); pop.classList.add('open'); pop.querySelector('.search').value=sl.search; caRenderList(sl); pop.querySelector('.search').focus(); }});
   el.querySelector('.clr').addEventListener('click',e=>{e.stopPropagation(); S2[id].clear(); caUpdate();});
   pop.addEventListener('click',e=>e.stopPropagation());
@@ -1507,12 +1534,11 @@ function caRenderList(sl){
     caUpdate(); caRenderList(sl);
   }));
 }
-caSlicer('emp','Employee Name',15,293,5000);
-caSlicer('loc','Location',326,302,6000);
-caSlicer('type','Status',650,302,7000);
+caSlicer('loc','Location',5,241,240,60,6000);
+caSlicer('emp','Employee Name',5,307,240,60,5000);
 
 /* date (Between) slicer on Date modified */
-const caD=cbox('slicer dslicer',973,207,293,77,8000,
+const caD=cbox('slicer dslicer',5,Y(158),240,77,8000,
   '<div class="shdr"><span title="Date modified">Date (Modified)</span><button class="clr" title="Clear selections">✕</button></div>'+
   '<div class="drow"><input type="date" class="dF"><input type="date" class="dT"></div>'+
   '<div class="range"><div class="track"></div><div class="fill"></div><div class="knob" data-k="0"></div><div class="knob" data-k="1"></div></div>');
@@ -1544,17 +1570,22 @@ function caPanel(title,x,w,z){
   const el=cbox('panel',x,309,w,221,z,'<div class="ptitle">'+esc(title)+'</div><div class="pbody"></div>');
   el.style.setProperty('--pc','linear-gradient(90deg,#14284B,#1F4E8C)'); return el.querySelector('.pbody');
 }
-const caDonutBody=caPanel('Corrective Actions by Location',5,301,10000);
-const caBarBody=caPanel('Corrective Actions by Type',313,540,11000);
-const caLineBody=caPanel('Trend',860,415,12000);
+const CA_SHORT={'Verbal Warning':'Verbal','Written Warning':'Written','Final Warning':'Final','Letter Of Concern':'Concern','Employee Success Plan':'Success Plan','Separation Agreement':'Separation'};
+const caChipsEl=cbox('cacard',5,Y(373),240,118,3000,'<div class="cah">Action type <small>click to filter</small></div><div class="cachips"></div>');
+const caMonthEl=cbox('cacard',5,Y(497),240,158,3000,'<div class="cah">By month</div><div class="camonth"></div>');
+const caBtns=cbox('cabtns',5,Y(661),240,50,3000,'<button class="caclear" title="Clear every filter, including the date range">Clear all</button><button class="caexport" title="Download the table as an Excel file">Export</button>');
+caBtns.querySelector('.caclear').onclick=()=>{ caClear(); caUpdate(); };
+caBtns.querySelector('.caexport').onclick=()=>caExport();
 
 /* table */
 const CA_COLS=[
-  {k:'l',t:'Location',w:70,c:true},{k:'e',t:'Employee Name',w:150},{k:'a',t:'Status',w:56,c:true,tip:'A = Active, T = Account Closed'},
-  {k:'j',t:'Job Title',w:190},{k:'m',t:'Manager',w:150},
-  ...CA_TABLE_TYPES.map(tn=>({k:tn,t:tn,w:92,c:true,num:true}))
+  {k:'l',t:'Loc',w:44,c:true,tip:'Location'},{k:'e',t:'Employee Name',w:152},{k:'a',t:'Status',w:54,c:true,tip:'A = Active, T = Account Closed'},
+  {k:'j',t:'Job Title',w:172},{k:'m',t:'Manager',w:132},
+  ...CA_TABLE_TYPES.map(tn=>({k:tn,t:CA_SHORT[tn],w:tn==='Separation Agreement'?76:68,c:true,num:true,tip:tn})),
+  {k:'T',t:'Total',w:52,c:true,num:true,tip:'All corrective actions for this employee'}
 ];
-const caTbl=cbox('tbl',5,536,1270,176+SHIFT,9000,'<div class="scroller"><table><colgroup>'+CA_COLS.map(c=>'<col style="width:'+c.w+'px">').join('')+'</colgroup><thead><tr>'+CA_COLS.map((c,j)=>'<th data-j="'+j+'"'+(c.c?' class="c"':'')+(c.tip?' title="'+c.tip+'"':'')+'>'+esc(c.t)+'<span class="ar"></span></th>').join('')+'</tr></thead><tbody></tbody><tfoot></tfoot></table></div>');
+const caTbl=cbox('tbl',251,Y(68),1024,644,9000,'<div class="scroller"><table><colgroup>'+CA_COLS.map(c=>'<col style="width:'+c.w+'px">').join('')+'</colgroup><thead><tr>'+CA_COLS.map((c,j)=>'<th data-j="'+j+'"'+(c.c?' class="c"':'')+(c.tip?' title="'+c.tip+'"':'')+'>'+esc(c.t)+'<span class="ar"></span></th>').join('')+'</tr></thead><tbody></tbody><tfoot></tfoot></table></div>');
+{ const tb=caTbl.querySelector('table'); tb.style.width=tb.style.minWidth=CA_COLS.reduce((s,c)=>s+c.w,0)+'px'; }  // fit the panel exactly
 let caSort={j:3,dir:-1};   // PBIX: sorted by Job ID descending
 caTbl.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{const j=+th.dataset.j; if(caSort.j===j) caSort.dir=-caSort.dir; else caSort={j,dir:CA_COLS[j].num?-1:1}; caUpdate();}));
 
@@ -1579,23 +1610,26 @@ const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','De
 function caUpdate(){
   if(!CA.rows) return;
   const R=CA.rows, n=CA.n;
-  const emp=new Set(), mgr=new Set(), typ=new Set(); let total=0;
+  const emp=new Set(), mgr=new Set(), typ=new Set(), act=new Set(); let total=0;
   const byLoc=new Map(), byType=new Map(), line=new Map(), grp=new Map();
   for(let i=0;i<n;i++){
     if(!caPass(i,null)) continue;
     if(caX(i,null)){
-      total++; emp.add(R.e[i]); mgr.add(R.m[i]||''); typ.add(R.t[i]);
+      total++; emp.add(R.e[i]); mgr.add(R.m[i]||''); typ.add(R.t[i]); if(R.a[i]==='A') act.add(R.e[i]);
       const key=R.l[i]+'|'+R.e[i]+'|'+R.a[i]+'|'+R.j[i]+'|'+(R.m[i]||'');
-      let g=grp.get(key); if(!g){g={l:R.l[i],e:R.e[i],a:R.a[i],j:R.j[i],m:caMgrDisplay(R.m[i]),docs:[]}; CA_TABLE_TYPES.forEach(tn=>g[tn]=0); grp.set(key,g);} g[R.t[i]]++; if(R.p) g.docs.push(R.p[i]);
+      let g=grp.get(key); if(!g){g={l:R.l[i],e:R.e[i],a:R.a[i],j:R.j[i],m:caMgrDisplay(R.m[i]),docs:[]}; CA_TABLE_TYPES.forEach(tn=>g[tn]=0); g.T=0; grp.set(key,g);} g[R.t[i]]++; g.T++; if(R.p) g.docs.push(R.p[i]);
     }
     if(caX(i,'donut')) byLoc.set(R.l[i],(byLoc.get(R.l[i])||0)+1);
     if(caX(i,'bar')) byType.set(R.t[i],(byType.get(R.t[i])||0)+1);
     if(caX(i,'line')){ const mk=monthKey(R.d[i]); let s=line.get(R.l[i]); if(!s){s=new Map();line.set(R.l[i],s);} s.set(mk,(s.get(mk)||0)+1); }
   }
-  caCard.total.textContent=nf.format(total); caCard.emp.textContent=nf.format(emp.size); caCard.mgr.textContent=nf.format(mgr.size); caCard.type.textContent=nf.format(typ.size);
-  caDonut(byLoc); caBar(byType); caLine(line); caTable([...grp.values()]);
+  caCard.total.textContent=nf.format(total); caCard.emp.textContent=nf.format(emp.size); caCard.mgr.textContent=nf.format(mgr.size);
+  caCard.active.textContent=emp.size?Math.round(act.size/emp.size*100)+'%':'–';
+  const chipAgg=new Map(), monAgg=new Map();
+  for(let i=0;i<n;i++){ if(caPass(i,'type')) chipAgg.set(R.t[i],(chipAgg.get(R.t[i])||0)+1); if(caPass(i,null)&&R.d[i]>=0){ const mk=monthKey(R.d[i]); monAgg.set(mk,(monAgg.get(mk)||0)+1); } }
+  caChips(chipAgg); caMonth(monAgg); caTable([...grp.values()]);
   // slicer items (cross-filtered by the other slicers)
-  for(const id of ['emp','loc','type']){
+  for(const id of ['emp','loc']){
     const field={emp:'e',loc:'l',type:'t'}[id], seen=new Set(S2[id]);
     for(let i=0;i<n;i++) if(caPass(i,id)&&caX(i,null)) seen.add(R[field][i]);
     let keys=[...seen]; if(id==='loc') keys.sort((a,b)=>a-b); else keys.sort((a,b)=>String(a).localeCompare(String(b)));
@@ -1677,6 +1711,41 @@ function caLine(series){
       c.addEventListener('mouseleave',hideTip); c.addEventListener('click',e=>{e.stopPropagation();caSelect('line','l',l,e.ctrlKey||e.metaKey);}); });
   });
 }
+function caChips(agg){
+  const box=caChipsEl.querySelector('.cachips'), sel=S2.type;
+  box.innerHTML=CA_TABLE_TYPES.map(tn=>{ const v=agg.get(tn)||0, on=sel.has(tn);
+    return '<button class="cachip'+(on?' on':'')+(sel.size&&!on?' off':'')+'" data-t="'+esc(tn)+'" style="--c:'+CA_TYPE_COLOR[tn]+'" title="'+esc(tn)+': '+nf.format(v)+(on?' (click to remove this filter)':' (click to filter)')+'">'+esc(CA_SHORT[tn])+' <b>'+nf.format(v)+'</b></button>'; }).join('');
+  box.querySelectorAll('.cachip').forEach(b=>b.onclick=e=>{ const tn=b.dataset.t; if(e.ctrlKey||e.metaKey||sel.size){ sel.has(tn)?sel.delete(tn):sel.add(tn); } else sel.add(tn); caUpdate(); });
+  caChipsEl.classList.toggle('active',sel.size>0);
+}
+function caMonth(agg){
+  const box=caMonthEl.querySelector('.camonth'); const ks=[...agg.keys()];
+  if(!ks.length){ box.innerHTML='<div class="empty">No data</div>'; return; }
+  const m0=Math.min(...ks), m1=Math.max(...ks), months=[]; for(let m=m0;m<=m1;m++) months.push(m);
+  const W=220, H=118, padB=16, padT=14, max=Math.max(...agg.values()), bw=W/months.length, multiYear=Math.floor(m0/12)!==Math.floor(m1/12);
+  const every=Math.ceil(months.length/8);
+  let svg='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">';
+  months.forEach((m,i)=>{ const v=agg.get(m)||0, h=(H-padT-padB)*v/max, x=i*bw+bw*.15, w=Math.max(2,bw*.7), y=H-padB-h;
+    svg+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+Math.max(v?1:0,h)+'" rx="2" fill="#1F4E8C"><title>'+MON[m%12]+' '+Math.floor(m/12)+': '+nf.format(v)+'</title></rect>';
+    if(v&&bw>=14) svg+='<text x="'+(x+w/2)+'" y="'+(y-3)+'" text-anchor="middle" class="mv">'+v+'</text>';
+    if(i%every===0||i===months.length-1) svg+='<text x="'+(x+w/2)+'" y="'+(H-3)+'" text-anchor="middle" class="ml">'+MON[m%12].slice(0,multiYear?3:3)+(multiYear&&(m%12===0||i===0)?" '"+String(Math.floor(m/12)).slice(2):'')+'</text>'; });
+  box.innerHTML=svg+'</svg>';
+}
+async function caExport(){
+  const G=CA.groups||[]; if(!G.length){ alert('There are no rows to export.'); return; }
+  const btn=caBtns.querySelector('.caexport'); btn.disabled=true; btn.textContent='Preparing…';
+  try{
+    await ensureXLSX();
+    const head=['Location','Employee Name','Status','Job Title','Manager',...CA_TABLE_TYPES,'Total'];
+    const aoa=[head,...G.map(g=>[g.l,g.e,g.a,g.j,(g.m||'').trim(),...CA_TABLE_TYPES.map(tn=>g[tn]||0),g.T||0])];
+    const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[10,28,8,30,26,...CA_TABLE_TYPES.map(()=>14),8].map(w=>({wch:w}));
+    ws['!autofilter']={ref:'A1:'+XLSX.utils.encode_col(head.length-1)+'1'};
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Corrective Actions');
+    const f=S2.dFrom!==null?isoDate(S2.dFrom):'all', tt=S2.dTo!==null?isoDate(S2.dTo):'today';
+    XLSX.writeFile(wb,'Corrective_Actions_'+f+'_to_'+tt+'.xlsx');
+  }catch(e){ alert('Could not create the Excel file: '+e.message); }
+  finally{ btn.disabled=false; btn.textContent='Export'; }
+}
 function caTable(groups){
   const c=CA_COLS[caSort.j], dir=caSort.dir;
   groups.sort((a,b)=>{const x=a[c.k],y=b[c.k]; return (typeof x==='number'?x-y:String(x).localeCompare(String(y)))*dir || a.e.localeCompare(b.e);});
@@ -1684,13 +1753,13 @@ function caTable(groups){
   CA.groups=groups;
   tb.innerHTML=groups.map((g,gi)=>'<tr class="data" data-g="'+gi+'">'+CA_COLS.map(col=>{ let v=g[col.k]; if(col.num&&!v) v=0; let inner=esc(v);
     if(col.k==='a'&&v) inner='<span class="pill" style="color:'+(v==='A'?'#1AAB40':'#D64550')+';background:'+(v==='A'?'#1AAB401F':'#D645501F')+'">'+v+'</span>';
-    if(col.num&&v) inner='<button class="docnum" data-t="'+esc(col.k)+'" title="Open the documents" style="color:'+CA_TYPE_COLOR[col.k]+'">'+v+'</button>';
+    if(col.num&&v) inner=col.k==='T'?'<button class="docnum tot" title="Open all documents for this employee">'+v+'</button>':'<button class="docnum" data-t="'+esc(col.k)+'" title="Open the documents" style="color:'+CA_TYPE_COLOR[col.k]+'">'+v+'</button>';
     if(col.k==='e') inner='<button class="docname" title="Open all documents for this employee">'+esc(v)+'</button>';
     if(col.num&&!v) inner='<span style="color:#B3B9C6">0</span>';
     return '<td class="'+(col.c?'c':'')+'" title="'+esc(v)+'">'+inner+'</td>'; }).join('')+'</tr>').join('');
-  const tot={}; CA_TABLE_TYPES.forEach(tn=>tot[tn]=groups.reduce((s,g)=>s+g[tn],0));
+  const tot={}; [...CA_TABLE_TYPES,'T'].forEach(tn=>tot[tn]=groups.reduce((s,g)=>s+(g[tn]||0),0));
   tb.querySelectorAll('button.docnum,button.docname').forEach(bt=>bt.addEventListener('click',e=>{ e.stopPropagation(); const g=CA.groups[+bt.closest('tr').dataset.g]; caOpenDocs(g,bt.dataset.t||null); }));
-  tf.innerHTML='<tr class="tot">'+CA_COLS.map((col,j)=>'<td class="'+(col.c?'c':'')+'">'+(j===0?'Total':col.num?nf.format(tot[col.k]):'')+'</td>').join('')+'</tr>';
+  tf.innerHTML='<tr class="tot">'+CA_COLS.map((col,j)=>'<td class="'+(col.c?'c':'')+'">'+(j===1?'Total ('+nf.format(groups.length)+' employees)':col.num?nf.format(tot[col.k]):'')+'</td>').join('')+'</tr>';
   caTbl.querySelectorAll('th .ar').forEach((s,j)=>s.textContent=j===caSort.j?(dir>0?'▲':'▼'):'');
 }
 
@@ -2068,7 +2137,7 @@ $('#rSave').onclick=async()=>{
 $('#rClear').onclick=()=>{ if(!confirm('Disconnect the documents repository? Users will no longer be able to open documents after you publish.')) return; ADMIN.docRepo=null; CA.repo=null; markDirty(); renderDocRepo(); $('#rMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-07.1';
+const APP_VERSION='2026-11-07.2';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
