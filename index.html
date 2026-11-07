@@ -232,6 +232,8 @@
   .dashpick.disabled{opacity:.4;pointer-events:none}
   td.dbs{white-space:nowrap} .db{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:9px;margin:1px 3px 1px 0;background:#EEF0F3;color:#A3AAB6;text-decoration:line-through}
   .db.on{background:#E3F1FF;color:#1F4E8C;text-decoration:none}
+  .orsep{margin:0 10px;font-size:12px;color:#5A6478}
+  .ghostbtn{font:inherit;font-size:13px;font-weight:700;color:#1F4E8C !important;border:1.5px solid #1F4E8C;border-radius:6px;padding:8px 14px;background:#fff}
   h3.sect{margin:26px 0 4px;padding-top:16px;border-top:1px solid #DCE3EE;color:#14284B;font-size:15px}
   button.link{border:none;background:none;color:#C0392B;font:inherit;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;margin-left:10px}
   .cabox{display:flex !important;flex-direction:row !important;align-items:flex-start;gap:8px;background:#FFF4EE;border:1px solid #F2B79B;border-radius:6px;padding:8px 10px;margin:4px 0 10px !important;font-weight:500 !important;color:#7A2E10 !important}
@@ -360,9 +362,12 @@
         <label class="primary filebtn">Load new Excel / CSV…<input type="file" id="dFile" accept=".xlsx,.xls,.csv" hidden></label>
         <div id="dMsg" class="msg"></div>
         <h3 class="sect">Corrective Actions documents</h3>
-        <p class="hint">Choose any folder of employee documents, for example <b>Disciplinary Actions &amp; Terminations</b>, <b>EmployeeRelationsSourceFile</b> or <b>EmployeeRelationsSourceFile2026</b>. Each employee is found from a folder named <b>Last, First</b> at any depth. Choosing a folder replaces only the entries for that folder; everything else is kept, and the same file found twice is counted once. Only file names and dates are read; documents are never opened or uploaded.</p>
+        <p class="hint"><b>Recommended:</b> the sync script on cmoore's computer copies <b>EmployeeRelationsSourceFile</b> and <b>EmployeeRelationsSourceFile2026</b> from OneDrive to the private repository with their original dates; then click <b>Load list from documents repository</b>. <br>Alternatively choose any folder of employee documents, for example <b>Disciplinary Actions &amp; Terminations</b>, <b>EmployeeRelationsSourceFile</b> or <b>EmployeeRelationsSourceFile2026</b>. Each employee is found from a folder named <b>Last, First</b> at any depth. Choosing a folder replaces only the entries for that folder; everything else is kept, and the same file found twice is counted once. Only file names and dates are read; documents are never opened or uploaded.</p>
         <div id="caInfo"></div>
-        <label class="primary filebtn">Select documents folder…<input type="file" id="caFile" webkitdirectory directory multiple hidden></label>
+        <button id="caRepoLoad" class="primary">Load list from documents repository</button>
+        <span class="orsep">or</span>
+        <label class="filebtn ghostbtn">Select documents folder…<input type="file" id="caFile" webkitdirectory directory multiple hidden></label>
+        <div id="caRepoInfo" class="hint"></div>
         <div id="caMsg" class="msg"></div>
         <h3 class="sect">Documents repository (open files from the dashboard)</h3>
         <p class="hint">Documents are opened from the <b>private</b> GitHub repository using a <b>read-only key</b>. The key is stored encrypted and is only given to users who have Corrective Actions access. Create it at <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained tokens</a>: <i>Only select repositories → employee-relations-documents</i>, <i>Repository permissions → Contents: <b>Read-only</b></i>. Status: <span id="rState"></span></p>
@@ -954,7 +959,7 @@ function setMeta(src,n,updated){
 }
 function startSession(payload,keyRaw,salt,man){
   SESSION={email:payload.profile.email,profile:payload.profile,keyRaw,salt,manifest:man};
-  ADMIN=payload.profile.role==='admin'?{raw:payload.data,users:payload.users||[],source:payload.source,updated:payload.updated,dirty:false,caDocs:payload.caDocs||null,people:payload.people||null,caUpdated:payload.caUpdated||null,docRepo:payload.docRepo||null,mail:payload.mail||null}:null;
+  ADMIN=payload.profile.role==='admin'?{raw:payload.data,users:payload.users||[],source:payload.source,updated:payload.updated,dirty:false,caDocs:payload.caDocs||null,people:payload.people||null,caUpdated:payload.caUpdated||null,docRepo:payload.docRepo||null,mail:payload.mail||null,caSource:payload.caSource||null}:null;
   M=buildModel(payload.data); setDefaults(); update(); setMeta(payload.source,M.n,payload.updated);
   const p=payload.profile;
   document.getElementById('who').textContent=(p.name?p.name+' · ':'')+p.email+(p.role==='admin'?' (Admin)':'');
@@ -1226,6 +1231,7 @@ $('#dFile').addEventListener('change',async e=>{
 });
 let LAST_REPORT='';
 let LOAD_FROM_TOOLBAR=false;
+document.getElementById('caRepoLoad').addEventListener('click',()=>caLoadFromRepo());
 document.getElementById('caFile').addEventListener('change',e=>{ try{ caLoadFolder(e.target.files); }catch(err){ const m=$('#caMsg'); m.className='msg bad'; m.textContent=err.message; } e.target.value=''; });
 document.getElementById('btnLoad').onclick=()=>{ LOAD_FROM_TOOLBAR=true; $('#dFile').click(); };
 $('#dFile').addEventListener('click',()=>{ setTimeout(()=>{},0); });
@@ -1265,7 +1271,7 @@ async function publish(cfg){
     const h=await sha256hex(u.email);
     const payload={profile:{email:u.email,name:u.name||'',role:u.role,perms:u.perms},updated:ADMIN.updated,source:ADMIN.source,
                    data:u.role==='admin'?ADMIN.raw:(u.perms&&u.perms.td===false?emptyRaw():subsetRaw(ADMIN.raw,u.perms))};
-    if(u.role==='admin'){ payload.users=ADMIN.users; payload.caDocs=ADMIN.caDocs; payload.people=ADMIN.people; payload.caUpdated=ADMIN.caUpdated; payload.docRepo=ADMIN.docRepo||null; payload.mail=ADMIN.mail||null; }
+    if(u.role==='admin'){ payload.users=ADMIN.users; payload.caDocs=ADMIN.caDocs; payload.people=ADMIN.people; payload.caUpdated=ADMIN.caUpdated; payload.docRepo=ADMIN.docRepo||null; payload.mail=ADMIN.mail||null; payload.caSource=ADMIN.caSource||null; }
     else if(u.perms&&u.perms.ca){ payload.ca={rows:caSubset(caDerive(ADMIN.caDocs,ADMIN.people),u.perms),files:caFiles(ADMIN.caDocs,ADMIN.people,u.perms),updated:ADMIN.caUpdated,repo:ADMIN.docRepo||null}; }
     files['data/u/'+h+'.json']=await encryptBundle(payload,b64d(u.key),u.salt);
     plog('  ✓ '+u.email+' ('+nf.format(payload.data.empNo.length)+' rows'+(u.role==='admin'||payload.ca?' + Corrective Actions':'')+')');
@@ -1746,6 +1752,7 @@ function caRecompute(){ if(!ADMIN) return; const keepView=VIEW; CA.files=caFiles
 
 /* ---------------- Admin: documents folder loader ---------------- */
 function caFolderSummary(){
+  const ri=document.getElementById('caRepoInfo'); if(ri){ const s=ADMIN.caSource; ri.textContent=s&&s.type==='repo'?'Current list: from the documents repository, synced '+(s.generated?new Date(s.generated).toLocaleString():'')+(s.computer?' on '+s.computer:'')+'.':''; }
   const d=ADMIN.caDocs, el=document.getElementById('caInfo'); if(!el) return;
   if(!d||!d.n||!d.n.length){ el.innerHTML='<i>No documents folder loaded yet.</i>'; return; }
   const per=d.roots.map((r,i)=>{ let c=0,mx=-1; d.r.forEach((x,k)=>{ if(x===i){c++; if(d.m[k]>mx) mx=d.m[k];} }); return '<div class="kv"><span>'+esc(r)+'</span><b>'+nf.format(c)+' files · latest '+fmtDate(mx)+'</b> <button class="link caRm" data-i="'+i+'">Remove</button></div>'; }).join('');
@@ -1774,7 +1781,7 @@ function caLoadFolder(files){
     const parts=f.webkitRelativePath.split('/'); const name=parts.pop(); parts.shift();
     const t=new Date(f.lastModified); d.f.push(parts.join('/')); d.n.push(name); d.m.push(Math.floor(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate())/864e5)); d.r.push(ri);
   }
-  ADMIN.caDocs=d; ADMIN.caUpdated=new Date().toISOString(); markDirty(); caRecompute(); caFolderSummary();
+  ADMIN.caDocs=d; ADMIN.caUpdated=new Date().toISOString(); ADMIN.caSource={type:'folder'}; markDirty(); caRecompute(); caFolderSummary();
   const rows=caDerive(d,ADMIN.people);
   const msg=document.getElementById('caMsg'); msg.className='msg ok';
   msg.textContent='Read '+nf.format(list.length)+' file names from "'+root+'"'+(removed?' (replacing '+nf.format(removed)+' earlier entries for this folder)':'')+'. Other folders were kept. No document contents are read or uploaded.\n'+nf.format(rows.e.length)+' corrective actions in total. Go to Publish so users with access get it.';
@@ -2006,6 +2013,39 @@ $('#mTest').onclick=async()=>{
   catch(e){ msg.className='msg bad'; msg.textContent=e.message; }
 };
 
+
+/* ---------------- Admin: load the document list written by the sync script (_index.json in the private repository) ---------------- */
+async function caLoadFromRepo(){
+  const msg=$('#caMsg'); msg.className='msg';
+  const R=ADMIN.docRepo; if(!R||!R.token){ msg.className='msg bad'; msg.textContent='Connect the documents repository first (Documents repository section below).'; return; }
+  msg.textContent='Reading the document list from '+R.repo+'…';
+  try{
+    const url='https://api.github.com/repos/'+encodeURIComponent(R.owner)+'/'+encodeURIComponent(R.repo)+'/contents/_index.json?ref='+encodeURIComponent(R.branch||'main');
+    const r=await fetch(url,{headers:{Authorization:'Bearer '+R.token,Accept:'application/vnd.github.raw'},cache:'no-store'});
+    if(r.status===404) throw new Error('No document list found in the repository yet. Run the sync script (scripts\\Sync-Documents.cmd) on the computer with the folders first.');
+    if(!r.ok) throw new Error('GitHub error '+r.status+' while reading the list.');
+    const idx=await r.json(); if(!idx||!Array.isArray(idx.folders)) throw new Error('The document list has an unexpected format.');
+    const d={roots:[],f:[],n:[],m:[],r:[],up:[]}; let total=0, notUp=0; const per=[];
+    for(const fo of idx.folders){
+      const ri=d.roots.length; d.roots.push(fo.root); let c=0;
+      for(const x of (fo.files||[])){
+        const parts=String(x.p).split('/'); const name=parts.pop();
+        const m=String(x.d||'').match(/^(\d{4})-(\d{2})-(\d{2})/); const day=m?Math.floor(Date.UTC(+m[1],+m[2]-1,+m[3])/864e5):-1;
+        d.f.push(parts.join('/')); d.n.push(name); d.m.push(day); d.r.push(ri); d.up.push(x.up!==false); c++; total++; if(x.up===false) notUp++;
+      }
+      per.push(fo.root+': '+nf.format(c)+' files');
+    }
+    if(!total) throw new Error('The document list is empty.');
+    const keepOther=ADMIN.caDocs&&ADMIN.caDocs.roots?ADMIN.caDocs.roots.filter(x=>!d.roots.includes(x)):[];
+    ADMIN.caDocs=d; ADMIN.caUpdated=new Date().toISOString(); ADMIN.caSource={type:'repo',generated:idx.generated||null,computer:idx.computer||null};
+    markDirty(); caRecompute(); caFolderSummary();
+    const rows=caDerive(d,ADMIN.people);
+    msg.className='msg ok';
+    msg.textContent='Loaded the list synced '+(idx.generated?new Date(idx.generated).toLocaleString():'')+'.\n'+per.join(' · ')+(notUp?' ('+nf.format(notUp)+' recordings/system files counted but not uploaded)':'')+
+      '\n'+nf.format(rows.e.length)+' corrective actions for '+nf.format(new Set(rows.e).size)+' employees.'+(keepOther.length?'\nReplaced the earlier lists: '+keepOther.join(', ')+'.':'')+'\nClick Publish so users get it.';
+  }catch(e){ msg.className='msg bad'; msg.textContent=e.message; }
+}
+
 /* Admin: documents repository settings */
 function renderDocRepo(){
   const r=ADMIN.docRepo||{owner:'cmcdatasolutions',repo:'employee-relations-documents',branch:'main',token:''};
@@ -2028,7 +2068,7 @@ $('#rSave').onclick=async()=>{
 $('#rClear').onclick=()=>{ if(!confirm('Disconnect the documents repository? Users will no longer be able to open documents after you publish.')) return; ADMIN.docRepo=null; CA.repo=null; markDirty(); renderDocRepo(); $('#rMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-05.12';
+const APP_VERSION='2026-11-07.1';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
