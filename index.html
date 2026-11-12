@@ -890,7 +890,8 @@ function slicerItems(id){
   for(let i=0;i<M.n;i++){ if(rowPass(i,id) && chartPass(i,null)) seen.add(arr[i]); }
   for(const k of S[id]) seen.add(k); // keep selected items visible
   let keys=[...seen];
-  if(id==='prog'){ keys=keys.filter(k=>k<SUMK); for(const k of [...keys]) if(isIap(k)) keys.push(SUMK+k); for(const k of S.prog) if(k>=SUMK&&!keys.includes(k)) keys.push(k); }
+  if(id==='prog'){ keys=keys.filter(k=>k>=0&&k<SUMK);   // no (Blank) choice in Program
+    for(const k of [...keys]) if(isIap(k)) keys.push(SUMK+k); for(const k of S.prog) if(k>=SUMK&&!keys.includes(k)) keys.push(k); }
   const lab=k=>labelFor(id,k);
   if(id==='loc') keys.sort((a,b)=>a-b); else keys.sort((a,b)=>lab(a).localeCompare(lab(b)));
   // (Blank) goes first like Power BI
@@ -2962,7 +2963,7 @@ $('#rSave').onclick=async()=>{
 $('#rClear').onclick=()=>{ if(!confirm('Disconnect the documents repository? Users will no longer be able to open documents after you publish.')) return; ADMIN.docRepo=null; CA.repo=null; markDirty(); renderDocRepo(); $('#rMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-12.3';
+const APP_VERSION='2026-11-12.4';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
