@@ -2061,6 +2061,7 @@ function buildPeople(rows){
   return P;
 }
 /* docs = {roots:[...], f:[subfolder path "A/B"], n:[file name], m:[day], r:[root idx]} -> action rows */
+const CA_SIGNED_RE=/sign|scan|execut|acknowledg|final|copy|^[\d\s._-]*\.pdf$/i;   // PDFs named like a signed/scanned copy
 function caDerive(docs,people){
   const rows={e:[],l:[],m:[],j:[],jc:[],id:[],a:[],t:[],d:[],p:[]};
   if(!docs||!docs.n) return rows;
@@ -2070,14 +2071,23 @@ function caDerive(docs,people){
   // One count per action. Files of the same employee and the same action type dated within CA_PDF_DAYS of each other
   // are the same action (drafts, signed copies, re-saves). Count the latest PDF (the signed, final copy);
   // if the action has no PDF, count the latest other version.
-  const groups=new Map();
+  const groups=new Map(), loose=[];
   for(let k=0;k<docs.n.length;k++){
     if(!keep[k]) continue;
     const emp=caEmployeeName(docs.f[k]?docs.f[k].split('/'):[]);
     const pi=idx.get(emp.toLowerCase()); const loc=pi===undefined?-1:people.loc[pi];
     const type=caTypeOf(docs.n[k],loc>=0);
+    if(type==='Active'&&/\.pdf$/i.test(docs.n[k])&&CA_SIGNED_RE.test(docs.n[k])){ loose.push([k,emp,pi,loc]); continue; }
     if(type==='Active'||type==='Terminated') continue;      // page filter in the PBIX
     const key=emp.toLowerCase()+'|'+type; if(!groups.has(key)) groups.set(key,[]); groups.get(key).push([k,emp,pi,loc,type]);
+  }
+  // A PDF whose name does not say what it is ("signed.pdf", "Scan 11-12.pdf") is the signed copy of the nearest action
+  // for the same employee within CA_PDF_DAYS, so it joins that action (and, being the latest PDF, is the one counted).
+  for(const [k,emp,pi,loc] of loose){
+    const d=docs.m[k]; if(d<0) continue; let best=null, gap=Infinity;
+    for(const [key,list] of groups){ if(!key.startsWith(emp.toLowerCase()+'|')) continue;
+      for(const c of list){ const g=Math.abs(docs.m[c[0]]-d); if(docs.m[c[0]]>=0&&g<=CA_PDF_DAYS&&(g<gap||(g===gap&&docs.m[c[0]]<=d))){ gap=g; best=[key,c[4]]; } } }
+    if(best) groups.get(best[0]).push([k,emp,pi,loc,best[1]]);
   }
   const isPdf=k=>/\.pdf$/i.test(docs.n[k]);
   const picked=[];
@@ -2843,7 +2853,7 @@ $('#rSave').onclick=async()=>{
 $('#rClear').onclick=()=>{ if(!confirm('Disconnect the documents repository? Users will no longer be able to open documents after you publish.')) return; ADMIN.docRepo=null; CA.repo=null; markDirty(); renderDocRepo(); $('#rMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-11.14';
+const APP_VERSION='2026-11-12.1';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
