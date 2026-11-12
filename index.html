@@ -111,6 +111,17 @@
   .tbl td.c{text-align:center}
   .tbl tr.data:nth-child(even) td{background:#F6F9FD}
   .tbl tr.data:hover td{background:#E6F0FF}
+  .sumtbl{display:flex;flex-direction:column}
+  .sumtbl .sumhead{flex:none;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:7px 10px;background:linear-gradient(90deg,#14284B,#1F4E8C);color:#fff;font-size:13px}
+  .sumtbl .sumhead b.t{font-size:14.5px;letter-spacing:.2px}
+  .sumtbl .sumhead .k{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+  .sumtbl .sumhead .k b{font-size:14px}
+  .sumtbl .sumhead .k i{display:inline-block;width:10px;height:10px;border-radius:50%}
+  .sumtbl .sumhead .rule{margin-left:auto;font-size:11.5px;opacity:.85;max-width:420px;line-height:1.3}
+  .sumtbl .scroller{flex:1;min-height:0}
+  .sumtbl table{width:100%;table-layout:fixed}
+  .sumtbl td.mods{text-align:center;font-variant-numeric:tabular-nums}
+  .sumtbl tr.inc td.mods{color:#B4451B;font-weight:700}
   .pill{display:inline-block;padding:1px 9px;border-radius:10px;font-size:11px;font-weight:700;line-height:16px;text-transform:capitalize}
   /* Tooltip */
   #tip{position:fixed;z-index:100000;pointer-events:none;background:var(--navy);color:#fff;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:12px;padding:7px 10px;display:none}
@@ -745,11 +756,16 @@ function buildModel(raw){
 const S={name:new Set(), loc:new Set(), mod:new Set(), prog:new Set(), status:new Set(), dFrom:null, dTo:null};
 const X={chart:null, key:null, keys:new Set()}; // cross-filter from a donut: chart id + selected keys
 
+/* Program slicer: every IAP also has an "IAP-xxxx (Summary)" choice (key SUMK+program). Summary choices do not filter
+   rows; they switch the details table to the IAP summary report. */
+const SUMK=100000; let PROG_REAL=new Set(), PROG_SUM=[];
+const isIap=k=>k>=0&&k<SUMK&&/^IAP/i.test(M.progs[k]||'');
+function splitProgSel(){ PROG_REAL=new Set([...S.prog].filter(k=>k<SUMK)); PROG_SUM=[...S.prog].filter(k=>k>=SUMK).map(k=>k-SUMK).filter(k=>M.progs[k]!==undefined).sort((a,b)=>M.progs[a].localeCompare(M.progs[b],undefined,{numeric:true})); }
 function rowPass(i, skip){
   if(skip!=="name"   && S.name.size   && !S.name.has(M.name[i])) return false;
   if(skip!=="loc"    && S.loc.size    && !S.loc.has(M.loc[i])) return false;
   if(skip!=="mod"    && S.mod.size    && !S.mod.has(M.modTitle[i])) return false;
-  if(skip!=="prog"   && S.prog.size   && !S.prog.has(M.prog[i])) return false;
+  if(skip!=="prog"   && PROG_REAL.size && !PROG_REAL.has(M.prog[i])) return false;
   if(skip!=="status" && S.status.size && !S.status.has(M.status[i])) return false;
   if(skip!=="date" && (S.dFrom!==null || S.dTo!==null)){
     const d=M.enroll[i]; if(d<0) return false;   // Date slicer = Enrollment Date
@@ -874,6 +890,7 @@ function slicerItems(id){
   for(let i=0;i<M.n;i++){ if(rowPass(i,id) && chartPass(i,null)) seen.add(arr[i]); }
   for(const k of S[id]) seen.add(k); // keep selected items visible
   let keys=[...seen];
+  if(id==='prog'){ keys=keys.filter(k=>k<SUMK); for(const k of [...keys]) if(isIap(k)) keys.push(SUMK+k); for(const k of S.prog) if(k>=SUMK&&!keys.includes(k)) keys.push(k); }
   const lab=k=>labelFor(id,k);
   if(id==='loc') keys.sort((a,b)=>a-b); else keys.sort((a,b)=>lab(a).localeCompare(lab(b)));
   // (Blank) goes first like Power BI
@@ -882,7 +899,7 @@ function slicerItems(id){
 }
 function labelFor(id,k){
   if(k<0) return BLANK;
-  switch(id){case 'name':return M.names[k];case 'loc':return String(k);case 'mod':return M.modTitles[k];case 'prog':return M.progs[k];case 'status':return M.statuses[k];}
+  switch(id){case 'name':return M.names[k];case 'loc':return String(k);case 'mod':return M.modTitles[k];case 'prog':return k>=SUMK?M.progs[k-SUMK]+' (Summary)':M.progs[k];case 'status':return M.statuses[k];}
 }
 
 /* ---------------- Date (Between) slicer ---------------- */
@@ -1044,6 +1061,8 @@ box('casep',245,TY(60),6,660,9500,'');   // blue divider between the sidebar and
 const tblEl=box('tbl',251,TY(60),1024,652,9000,
   '<div class="scroller"><table style="width:'+COLS.reduce((s,c)=>s+c.w,0)+'px"><colgroup>'+COLS.map(c=>'<col style="width:'+c.w+'px">').join('')+'</colgroup><thead><tr>'+COLS.map((c,j)=>'<th data-j="'+j+'"'+(j<FZ?' style="left:'+fzLeft(j)+'px"':'')+' class="'+(c.c?'c':'')+(j<FZ?' fz'+(j===FZ-1?' fzl':''):'')+'"'+(c.tip?' title="'+c.tip+'"':'')+'>'+c.t+'<span class="ar"></span></th>').join('')+'</tr></thead><tbody></tbody></table></div>');
 const scroller=tblEl.querySelector('.scroller'), tbody=tblEl.querySelector('tbody');
+const sumEl=box('tbl sumtbl',251,TY(60),1024,652,9001,'<div class="sumhead"></div><div class="scroller"><table><thead></thead><tbody></tbody></table></div>');
+sumEl.style.display='none';
 let tRows=new Int32Array(0), sortCol=0, sortDir=1;
 tblEl.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{const j=+th.dataset.j; if(sortCol===j) sortDir=-sortDir; else {sortCol=j;sortDir=1;} sortTable(); renderTable(true);}));
 scroller.addEventListener('scroll',()=>renderTable(false));
@@ -1068,7 +1087,86 @@ function renderTable(reset){
   tbody.innerHTML=h;
 }
 
+/* ---------------- IAP summary report ----------------
+   One row per employee per IAP. Completed = every module of that IAP the employee is enrolled in has been completed;
+   otherwise Incomplete. Location / name / date filters choose who is listed (anyone with an IAP enrollment in the
+   date range); completion is judged on all of the employee's enrollments in that IAP. */
+let SUM={rows:[],sort:'name',dir:1};
+const SUMCOLS=[
+  {k:'iap', t:'IAP', w:96},
+  {k:'name',t:'Employee Name',w:190},
+  {k:'job', t:'Job Title',w:230},
+  {k:'loc', t:'Loc',w:50,c:true},
+  {k:'en',  t:'Enrollment Date',w:104,num:true},
+  {k:'cd',  t:'Completion Date',w:104,num:true},
+  {k:'mods',t:'Modules completed',w:96,c:true},
+  {k:'st',  t:'Status',w:110,c:true}];
+function iapSummary(){
+  const on=PROG_SUM.length>0;
+  sumEl.style.display=on?'flex':'none'; tblEl.style.visibility=on?'hidden':'';
+  if(!on){ SUM.rows=[]; return; }
+  const want=new Set(PROG_SUM), done=M.statuses.map(v=>v==='completed'||v==='passed');
+  const people=new Map();   // iap|employee -> record
+  for(let i=0;i<M.n;i++){
+    const p=M.prog[i]; if(!want.has(p)||M.empNo[i]<0) continue;
+    const key=p+'|'+M.empNo[i];
+    let r=people.get(key);
+    if(!r){ r={p,emp:M.empNo[i],nm:M.name[i],jt:M.jobTitle[i],loc:M.loc[i],mods:new Map(),en:Infinity,cd:-1,show:false}; people.set(key,r); }
+    const ok=M.complete[i]>=0||(M.status[i]>=0&&done[M.status[i]]);
+    const t=M.modTitle[i]; r.mods.set(t,(r.mods.get(t)||false)||ok);
+    if(M.enroll[i]>=0&&M.enroll[i]<r.en) r.en=M.enroll[i];
+    if(M.complete[i]>r.cd) r.cd=M.complete[i];
+    if(!r.show&&sumPass(i)) r.show=true;
+  }
+  const rows=[]; let nC=0;
+  for(const r of people.values()){ if(!r.show) continue;
+    const total=r.mods.size, fin=[...r.mods.values()].filter(Boolean).length, comp=total>0&&fin===total;
+    if(comp) nC++;
+    rows.push({iap:M.progs[r.p],name:M.names[r.nm],job:r.jt<0?'':M.jobTitles[r.jt],loc:r.loc,en:isFinite(r.en)?r.en:-1,cd:comp?r.cd:-1,fin,total,st:comp?'Completed':'Incomplete'}); }
+  SUM.rows=rows; SUM.nC=nC;
+  const names=PROG_SUM.map(k=>M.progs[k]).join(', ');
+  sumEl.querySelector('.sumhead').innerHTML='<b class="t">'+esc(names)+' summary</b>'+
+    '<span class="k">'+'<b>'+nf.format(rows.length)+'</b> employees</span>'+
+    '<span class="k"><i style="background:#2E9E5B"></i><b>'+nf.format(nC)+'</b> completed</span>'+
+    '<span class="k"><i style="background:#E66C37"></i><b>'+nf.format(rows.length-nC)+'</b> incomplete</span>'+
+    '<span class="rule">Completed = every module of the IAP the person is enrolled in is complete.</span>';
+  sumRender();
+}
+function sumPass(i){   // who is listed: location, employee name and enrollment-date filters (not module / program / status)
+  if(S.name.size&&!S.name.has(M.name[i])) return false;
+  if(S.loc.size&&!S.loc.has(M.loc[i])) return false;
+  if(S.dFrom!==null||S.dTo!==null){ const d=M.enroll[i]; if(d<0) return false; if(S.dFrom!==null&&d<S.dFrom) return false; if(S.dTo!==null&&d>S.dTo) return false; }
+  if(X.chart&&X.keys.size&&X.chart!=='status'&&!X.keys.has(M[CHARTS[X.chart].field][i])) return false;
+  return true;
+}
+function sumRender(){
+  const cols=SUMCOLS.filter(c=>c.k!=='iap'||PROG_SUM.length>1);
+  const val=(r,k)=>k==='mods'?r.fin/(r.total||1):r[k];
+  const c0=SUM.sort, d=SUM.dir;
+  SUM.rows.sort((a,b)=>{ const x=val(a,c0), y=val(b,c0); return (typeof x==='number'?x-y:String(x).localeCompare(String(y)))*d || a.name.localeCompare(b.name); });
+  const tb=sumEl.querySelector('table');
+  tb.querySelector('thead').innerHTML='<tr>'+cols.map(c=>'<th data-k="'+c.k+'" class="'+(c.c||c.num?'c':'')+'" style="width:'+c.w+'px">'+c.t+'<span class="ar">'+(c.k===c0?(d>0?'▲':'▼'):'')+'</span></th>').join('')+'</tr>';
+  const cell=(r,c)=>{
+    if(c.k==='st'){ const col=r.st==='Completed'?'#2E9E5B':'#E66C37'; return '<td class="c"><span class="pill" style="color:'+col+';background:'+col+'1F">'+r.st+'</span></td>'; }
+    if(c.k==='mods') return '<td class="mods">'+r.fin+' of '+r.total+'</td>';
+    if(c.k==='en'||c.k==='cd') return '<td class="c">'+(r[c.k]>=0?fmtDate(r[c.k]):'')+'</td>';
+    if(c.k==='loc') return '<td class="c">'+(r.loc<0?'':r.loc)+'</td>';
+    return '<td title="'+esc(r[c.k])+'">'+esc(r[c.k])+'</td>'; };
+  tb.querySelector('tbody').innerHTML=SUM.rows.length?SUM.rows.map(r=>'<tr class="data'+(r.st==='Completed'?'':' inc')+'">'+cols.map(c=>cell(r,c)).join('')+'</tr>').join('')
+    :'<tr><td colspan="'+cols.length+'" style="text-align:center;padding:20px;color:#5A6478">No one matches the current filters.</td></tr>';
+  tb.querySelectorAll('th').forEach(th=>th.onclick=()=>{ const k=th.dataset.k; if(SUM.sort===k) SUM.dir=-SUM.dir; else { SUM.sort=k; SUM.dir=1; } sumRender(); });
+}
+
 async function tdExport(){
+  if(PROG_SUM.length){
+    if(!SUM.rows.length){ alert('There are no rows to export.'); return; }
+    await ensureXLSX();
+    const aoa=[['IAP','Employee Name','Job Title','Location','Enrollment Date','Completion Date','Modules completed','Modules enrolled','Status'],
+      ...SUM.rows.map(r=>[r.iap,r.name,r.job,r.loc<0?'':r.loc,r.en>=0?fmtDate(r.en):'',r.cd>=0?fmtDate(r.cd):'',r.fin,r.total,r.st])];
+    const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[12,28,34,10,15,15,10,10,12].map(w=>({wch:w})); ws['!autofilter']={ref:'A1:I1'};
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'IAP summary');
+    XLSX.writeFile(wb,'IAP_summary_'+PROG_SUM.map(k=>M.progs[k]).join('_').replace(/[^A-Za-z0-9_-]+/g,'')+'.xlsx'); return;
+  }
   if(!tRows.length){ alert('There are no rows to export.'); return; }
   const btn=tdBtns.querySelector('.caexport'); btn.disabled=true; btn.textContent='Preparing…';
   try{
@@ -1087,6 +1185,7 @@ async function tdExport(){
 /* ---------------- Recalculate everything ---------------- */
 function update(){
   if(!M) return;
+  splitProgSel();
   const n=M.n;
   // Base pass: slicers. Each visual additionally applies the donut cross-filter unless it is the source chart.
   const base=new Uint8Array(n);
@@ -1118,6 +1217,7 @@ function update(){
   tdStatusBars(stAgg);
   for(const id in CHARTS) drawDonut(id,aggs[id]);
   tRows=Int32Array.from(rows); sortTable(); renderTable(true);
+  iapSummary();
   // Slicer labels + available items
   for(const sl of Object.values(SLICERS)){
     const sel=S[sl.id];
@@ -2862,7 +2962,7 @@ $('#rSave').onclick=async()=>{
 $('#rClear').onclick=()=>{ if(!confirm('Disconnect the documents repository? Users will no longer be able to open documents after you publish.')) return; ADMIN.docRepo=null; CA.repo=null; markDirty(); renderDocRepo(); $('#rMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-12.2';
+const APP_VERSION='2026-11-12.3';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
