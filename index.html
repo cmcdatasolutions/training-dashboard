@@ -1226,9 +1226,17 @@ async function fetchBundle(email,man){
   if(!r.ok) return null;
   return r.json();
 }
+/* Header line: each dashboard shows when ITS data was last updated
+   (training data = last import; corrective actions = last document sync). */
+let TD_META={src:'',n:0,updated:null};
+const fmtWhen=(u,time)=>u?new Date(u).toLocaleString('en-US',time?{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}:{month:'short',day:'numeric',year:'numeric'}):'';
+function renderMeta(){
+  const el=document.getElementById('meta');
+  if(VIEW==='ca') el.textContent='Employee relations documents'+(CA.updated?' · updated '+fmtWhen(CA.updated,true):'')+' · '+nf.format(CA.n)+' actions';
+  else el.textContent=(TD_META.src||'')+(TD_META.updated?' · updated '+fmtWhen(TD_META.updated):'')+' · '+nf.format(TD_META.n)+' rows';
+}
 function setMeta(src,n,updated){
-  const when=updated?new Date(updated).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
-  document.getElementById('meta').textContent=(src||'')+(when?' · updated '+when:'')+' · '+nf.format(n)+' rows';
+  TD_META={src,n,updated}; renderMeta();
   subEl.innerHTML='Learning &amp; compliance training activity<br><b style="color:#fff">'+nf.format(n)+'</b> enrollment records';
 }
 function startSession(payload,keyRaw,salt,man){
@@ -2449,6 +2457,7 @@ function caSetRows(rows,updated){
   let a=Infinity,b=-Infinity; if(rows) for(const d of rows.d) if(d>=0){ if(d<a)a=d; if(d>b)b=d; }
   CA.dMin=isFinite(a)?a:0; CA.dMax=isFinite(b)?b:0;
   caSub.innerHTML='Employee relations documents<br><b style="color:#fff">'+nf.format(CA.n)+'</b> corrective actions on file';
+  if(typeof renderMeta==='function') renderMeta();
 }
 function caDefaults(){ S2.emp.clear(); S2.loc.clear(); S2.type.clear(); S2.dTo=null; S2.dFrom=(CA.n&&CA_DEFAULT_START<=CA.dMax)?Math.max(CA_DEFAULT_START,CA.dMin):null; X2.src=null; X2.keys.clear(); }
 function caClear(){ S2.emp.clear(); S2.loc.clear(); S2.type.clear(); S2.dFrom=S2.dTo=null; X2.src=null; X2.keys.clear(); }
@@ -2472,7 +2481,7 @@ function showView(v){
   VIEW=v; closePops(); hideTip();
   document.querySelector('#toolbar .ttl').textContent=v==='ca'?'Corrective Action Dashboard':'Training & Development Dashboard';
   C.style.display=v==='td'?'':'none'; CC.style.display=v==='ca'?'':'none';
-  renderDashSelects(); fit();
+  renderDashSelects(); fit(); renderMeta();
   if(v==='ca') caUpdate();
   try{sessionStorage.setItem('td_view',v);}catch(e){}
 }
@@ -2853,7 +2862,7 @@ $('#rSave').onclick=async()=>{
 $('#rClear').onclick=()=>{ if(!confirm('Disconnect the documents repository? Users will no longer be able to open documents after you publish.')) return; ADMIN.docRepo=null; CA.repo=null; markDirty(); renderDocRepo(); $('#rMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-12.1';
+const APP_VERSION='2026-11-12.2';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
