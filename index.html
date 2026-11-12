@@ -850,6 +850,11 @@ function openPop(sl){
   const r=sl.el; const left=parseFloat(r.style.left), top=parseFloat(r.style.top)+parseFloat(r.style.height);
   const w=Math.max(parseFloat(r.style.width),240);
   Object.assign(sl.pop.style,{left:Math.min(left,1280-w-4)+'px',top:top+'px',width:w+'px'});
+  // keep the list above the Clear all / Export buttons; it scrolls instead of covering them
+  sl.pop.classList.add('open');
+  const lst=sl.pop.querySelector('.list'); lst.style.height='220px';
+  const over=sl.pop.offsetHeight-lst.offsetHeight, limit=(typeof tdBtns!=='undefined'?parseFloat(tdBtns.style.top):1e9)-6;
+  lst.style.height=Math.max(96,Math.min(220,limit-top-over))+'px';
   sl.pop.classList.add('open'); sl.pop.querySelector('.search').value=sl.search;
   filterItems(sl); renderList(sl); sl.pop.querySelector('.search').focus();
 }
@@ -864,7 +869,7 @@ function renderList(sl){
   const list=sl.pop.querySelector('.list');
   const sel=S[sl.id];
   const rows=[{all:true,label:'Select all'}].concat(sl.filtered);
-  const total=rows.length; const st=list.scrollTop; const vis=Math.ceil(220/ROWH)+2;
+  const total=rows.length; const st=list.scrollTop; const vis=Math.ceil((list.clientHeight||220)/ROWH)+2;
   const a=Math.max(0,Math.floor(st/ROWH)-1), b=Math.min(total,a+vis+2);
   let html='<div style="height:'+(total*ROWH)+'px"></div>';
   for(let k=a;k<b;k++){
@@ -900,7 +905,7 @@ function slicerItems(id){
 }
 function labelFor(id,k){
   if(k<0) return BLANK;
-  switch(id){case 'name':return M.names[k];case 'loc':return String(k);case 'mod':return M.modTitles[k];case 'prog':return k>=SUMK?M.progs[k-SUMK]+' (Summary)':M.progs[k];case 'status':return M.statuses[k];}
+  switch(id){case 'name':return M.names[k];case 'loc':return String(k);case 'mod':return M.modTitles[k];case 'prog':return k>=SUMK?M.progs[k-SUMK]+' (Summary)':M.progs[k]+(isIap(k)?' (Details)':'');case 'status':return M.statuses[k];}
 }
 
 /* ---------------- Date (Between) slicer ---------------- */
@@ -2963,7 +2968,7 @@ $('#rSave').onclick=async()=>{
 $('#rClear').onclick=()=>{ if(!confirm('Disconnect the documents repository? Users will no longer be able to open documents after you publish.')) return; ADMIN.docRepo=null; CA.repo=null; markDirty(); renderDocRepo(); $('#rMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-12.4';
+const APP_VERSION='2026-11-12.5';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
