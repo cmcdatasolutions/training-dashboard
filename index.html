@@ -881,10 +881,12 @@ function renderList(sl){
   list.innerHTML=html;
   list.querySelectorAll('.row').forEach(rw=>rw.addEventListener('click',()=>{
     const it=rows[+rw.dataset.k];
-    if(it.all){
+    if(it.all&&sl.single){ sel.clear(); }
+    else if(it.all){
       const allOn=sel.size && sl.filtered.every(f=>sel.has(f.key));
       if(allOn||!sl.search){ sel.clear(); } else { sl.filtered.forEach(f=>sel.add(f.key)); }
-    } else { sel.has(it.key)?sel.delete(it.key):sel.add(it.key); }
+    } else if(sl.single){ const had=sel.has(it.key); sel.clear(); if(!had) sel.add(it.key); }   // one choice at a time
+    else { sel.has(it.key)?sel.delete(it.key):sel.add(it.key); }
     update(); renderList(sl);
   }));
 }
@@ -950,7 +952,7 @@ function drawDate(){
 makeSlicer('loc','Location',5,TY(233),240,60,7000,{});
 makeSlicer('name','Employee Name',5,TY(299),240,60,6000,{});
 makeSlicer('mod','Module Title',5,TY(365),240,60,5000,{});
-makeSlicer('prog','Program',5,TY(431),240,60,4000,{});
+makeSlicer('prog','Program',5,TY(431),240,60,4000,{single:true});   // one program / summary / details at a time
 
 /* Lesson Status bars (click to filter; Ctrl/Cmd-click adds another) */
 const tdStatusEl=box('cacard',5,TY(497),240,158,3000,'<div class="cah">Lesson status <small>click to filter</small></div><div class="tdtot"></div><div class="tdbars"></div>');
@@ -2968,7 +2970,7 @@ $('#rSave').onclick=async()=>{
 $('#rClear').onclick=()=>{ if(!confirm('Disconnect the documents repository? Users will no longer be able to open documents after you publish.')) return; ADMIN.docRepo=null; CA.repo=null; markDirty(); renderDocRepo(); $('#rMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-12.5';
+const APP_VERSION='2026-11-12.6';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
