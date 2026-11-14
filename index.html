@@ -351,6 +351,63 @@
   #bOwn{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13px}
   #bOwn .dpl{font-weight:700;color:#14284B}
   #bOwn label{flex-direction:row !important;gap:6px !important;font-weight:600 !important}
+  /* Workday */
+  #wdView{position:absolute;inset:0;flex-direction:column;background:#EEF2F8;overflow:hidden}
+  .wdhdr{flex:none;height:62px;display:flex;align-items:center;gap:18px;padding:0 16px;background:linear-gradient(90deg,#14284B 0%,#1F4E8C 45%,#7A2E5C 80%,#C0392B 100%);color:#fff}
+  .wdtitle{font-size:27px;letter-spacing:.5px}.wdtitle b{font-weight:900}.wdtitle span{font-weight:300}
+  .wdsub{margin-left:auto;text-align:right;font-size:12.5px;line-height:1.35;opacity:.95}
+  .wddash{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+  .wddash select{font:inherit;font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;padding:6px 10px;border-radius:4px;border:none;min-width:230px}
+  .wdbar{flex:none;display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #DCE3EE;flex-wrap:wrap}
+  .wdbar select,.wdbar input{font:inherit;font-size:13px;padding:7px 9px;border:1px solid #C5D0E0;border-radius:6px;background:#fff}
+  .wdbar #wdQ{width:250px}
+  .wdbar #wdRefresh{font-size:15px;padding:5px 10px;border:1px solid #C5D0E0;border-radius:6px;background:#fff;cursor:pointer}
+  .wdprimary{font:inherit;font-weight:800;font-size:13.5px;padding:9px 14px;border:none;border-radius:6px;background:#1E8E3E;color:#fff;cursor:pointer}
+  .wdprimary:hover{background:#146C2E}
+  .wdsp{flex:1}
+  #wdStats{display:flex;gap:8px}
+  .wdstat{display:flex;flex-direction:column;align-items:flex-start;min-width:92px;padding:4px 10px;border:1px solid #DCE3EE;border-left:4px solid var(--c,#1F4E8C);border-radius:6px;background:#fff;font:inherit;cursor:pointer;text-align:left}
+  .wdstat b{font-size:18px;color:#14284B;line-height:1.1}.wdstat span{font-size:11px;color:#5A6478;font-weight:700}
+  .wdstat.on{background:#EEF4FF;box-shadow:inset 0 0 0 2px var(--c)}
+  .wdstat.avg{cursor:default;--c:#7A2E5C}
+  #wdBody{flex:1;overflow:auto;padding:12px 16px}
+  .wdempty{margin:40px auto;max-width:620px;text-align:center;font-size:14.5px;color:#14284B;background:#fff;border:1px solid #DCE3EE;border-radius:10px;padding:26px;line-height:1.55}
+  .wdempty.bad{color:#B00020}
+  .wdtbl{width:100%;border-collapse:collapse;background:#fff;font-size:13px;border:1px solid #DCE3EE}
+  .wdtbl th{position:sticky;top:-12px;background:#14284B;color:#fff;text-align:left;padding:8px 9px;font-size:12px;z-index:1}
+  .wdtbl th.c,.wdtbl td.c{text-align:center}
+  .wdtbl td{padding:7px 9px;border-bottom:1px solid #EDF1F7;vertical-align:middle}
+  .wdtbl tr[data-id]{cursor:pointer}.wdtbl tr[data-id]:hover td{background:#EEF4FF}
+  .wdtbl .sub,.wdbar .sub,.wdside .sub{font-size:11.5px;color:#5A6478}
+  .wdpill{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11.5px;font-weight:800}
+  .wdopen{font:inherit;font-size:12px;font-weight:700;padding:4px 10px;border:1px solid #1F4E8C;color:#1F4E8C;background:#fff;border-radius:5px;cursor:pointer}
+  .wdmodal{position:fixed;inset:0;z-index:260500;background:rgba(11,18,32,.45);display:flex;align-items:center;justify-content:center}
+  .wdmodal .fhead{display:flex;align-items:center}
+  .wdx{margin-left:auto;background:none;border:none;color:inherit;font-size:18px;cursor:pointer}
+  .wdmodal .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .wdmodal label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:700;color:#14284B;margin-bottom:10px}
+  .wdmodal input,.wdmodal select,.wdmodal textarea{font:inherit;font-size:13.5px;font-weight:500;padding:8px 10px;border:1px solid #C5D0E0;border-radius:6px;color:#0B1220;background:#fff}
+  .wdmodal textarea{resize:vertical;line-height:1.4}
+  .wdmodal input:disabled,.wdmodal select:disabled,.wdmodal textarea:disabled{background:#F4F7FB;color:#3A4558}
+  .wdcard{width:min(1240px,97vw);height:min(860px,94vh);display:flex;flex-direction:column}
+  .wdgrid{flex:1;min-height:0;display:grid;grid-template-columns:300px 1fr}
+  .wdside{overflow:auto;padding:14px;border-right:1px solid #DCE3EE;background:#F7F9FC}
+  .wdside h4{margin:14px 0 6px;font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:#5A6478}
+  .wdtimes{display:grid;gap:4px;font-size:12px;background:#fff;border:1px solid #DCE3EE;border-radius:8px;padding:8px 10px}
+  .wdtimes div{display:flex;justify-content:space-between;gap:8px}.wdtimes span{color:#5A6478}.wdtimes b{color:#14284B;text-align:right}.wdtimes b.late{color:#C0392B}
+  .wdcomments{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:240px;overflow:auto}
+  .wdc{background:#fff;border:1px solid #DCE3EE;border-radius:8px;padding:6px 9px;font-size:12.5px}
+  .wdc div{display:flex;justify-content:space-between;gap:6px}.wdc div span{font-size:11px;color:#5A6478}.wdc p{margin:3px 0 0;line-height:1.35}
+  .wdsmall{font-size:12.5px !important;padding:6px 12px !important;margin-top:6px}
+  .wdlog{font-size:11.5px;color:#5A6478;display:grid;gap:3px}
+  .wdmain{overflow:auto;padding:14px 18px}
+  .wdform{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+  .wdform label.wide{grid-column:1/-1}
+  .wdform em{font-style:normal;font-weight:500;font-size:11.5px;color:#5A6478}
+  .wdchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .wdchips button{font:inherit;font-size:11.5px;font-weight:700;padding:3px 9px;border:1px solid #1F4E8C;border-radius:12px;background:#EEF4FF;color:#1F4E8C;cursor:pointer}
+  .wdchips button:hover{background:#1F4E8C;color:#fff}
+  #wePrint{font:inherit;font-weight:700;padding:8px 14px;border:1px solid #14284B;border-radius:6px;background:#fff;color:#14284B;cursor:pointer}
   #userForm{position:fixed;inset:0;z-index:260000;background:rgba(11,18,32,.45);display:flex;align-items:center;justify-content:center}
   .fcard{width:min(1000px,94vw);max-height:92vh;background:#fff;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}
   .fhead{padding:14px 18px;font-weight:700;font-size:15px;background:#F4F7FB;border-bottom:1px solid #DCE3EE;color:#14284B}
@@ -441,7 +498,54 @@
   <span class="who" id="who"></span>
   <button id="btnSignOut">Sign out</button>
 </div>
-<div id="stage"><div id="canvas"></div><div id="canvasCA" style="display:none"></div></div>
+<div id="stage"><div id="canvas"></div><div id="canvasCA" style="display:none"></div>
+<div id="wdView" style="display:none">
+  <div class="wdhdr"><div class="wdtitle"><b>WORKDAY</b> <span>HR DOCUMENTS &amp; TASKS</span></div>
+    <div class="wdsub">Corrective action documents<br><b>assigned, tracked and printed</b></div>
+    <div class="wddash"><span>Dashboard</span><select class="dashSel" aria-label="Select dashboard"></select></div></div>
+  <div class="wdbar">
+    <button id="wdNew" class="wdprimary">+ New document</button>
+    <div id="wdStats"></div>
+    <span class="wdsp"></span>
+    <select id="wdType"></select>
+    <span id="wdWhoWrap"><select id="wdWho"></select></span>
+    <input id="wdQ" placeholder="Search employee, document, person">
+    <button id="wdRefresh" title="Load the latest tasks">⟳</button>
+    <span id="wdNote" class="sub"></span>
+  </div>
+  <div id="wdBody"></div>
+</div></div>
+<!-- Workday: new document -->
+<div id="wdNewForm" class="wdmodal" style="display:none"><div class="fcard" style="width:min(620px,96vw)">
+  <div class="fhead">New document</div>
+  <div class="fbody">
+    <label>Document type<select id="wnType"></select></label>
+    <label>Employee<input id="wnEmp" list="wnEmpList" placeholder="Start typing a name from the training data" autocomplete="off"><datalist id="wnEmpList"></datalist></label>
+    <div class="grid2"><label>Assign to (HR)<select id="wnWho"></select></label><label>Due date (optional)<input id="wnDue" type="date"></label></div>
+    <p class="pnote">The employee's job title, location and manager are filled in from the training data; everything can be edited in the form.</p>
+    <div id="wnMsg" class="msg"></div>
+  </div>
+  <div class="ffoot"><button id="wnCancel">Cancel</button><button id="wnSave" class="primary">Create</button></div>
+</div></div>
+<!-- Workday: task editor -->
+<div id="wdEditor" class="wdmodal" style="display:none"><div class="fcard wdcard">
+  <div class="fhead"><span id="weTitle"></span><button id="weClose" class="wdx" title="Close">✕</button></div>
+  <div class="wdgrid">
+    <aside class="wdside">
+      <label>Assigned to<select id="weWho"></select></label>
+      <label>Due date<input id="weDue" type="date"></label>
+      <label>Status<select id="weStatus"></select></label>
+      <div id="weTimes" class="wdtimes"></div>
+      <h4>Comments</h4>
+      <div id="weComments" class="wdcomments"></div>
+      <textarea id="weCText" rows="3" placeholder="Add a comment for the team…"></textarea>
+      <button id="weCAdd" class="primary wdsmall">Add comment</button>
+      <h4>History</h4><div id="weLog" class="wdlog"></div>
+    </aside>
+    <section class="wdmain"><div id="weRO" class="pnote" style="display:none;margin:0 0 8px">Only the assigned HR employee or an admin can edit this document.</div><div id="weForm" class="wdform"></div></section>
+  </div>
+  <div class="ffoot"><button id="weDel" class="link" style="color:#C0392B;margin-right:auto">Delete task</button><button id="wePrint">🖨 Print</button><button id="weSave" class="primary">Save changes</button></div>
+</div></div>
 </div>
 <div id="tip"></div>
 <div id="shareModal" style="display:none"><div class="scard">
@@ -528,6 +632,13 @@
         <label>Read-only key<input id="rToken" type="password" name="github-readonly-key" autocomplete="new-password" data-lpignore="true" data-1p-ignore spellcheck="false" placeholder="github_pat_…"></label>
         <button id="rSave" class="primary">Test &amp; save</button> <button id="rClear" class="link">Disconnect</button>
         <div id="rMsg" class="msg"></div>
+        <h3 class="sect">Workday repository (HR task tracker)</h3>
+        <p class="hint">Workday tasks, statuses and comments are saved in a <b>private</b> GitHub repository with a key that can <b>write</b> (fine-grained token, only that repository, Contents: Read and write). The key is stored encrypted and given only to admins and users with the Workday permission.</p>
+        <div class="grid3"><label>Owner<input id="wOwner"></label><label>Repository<input id="wRepo"></label><label>Branch<input id="wBranch"></label></div>
+        <label>Write key<input id="wToken" type="password" name="github-workday-key" autocomplete="new-password" data-lpignore="true" data-1p-ignore spellcheck="false" placeholder="github_pat_…"></label>
+        <div id="wState" class="note"></div>
+        <button id="wSave" class="primary">Test &amp; save</button> <button id="wClear" class="link">Disconnect</button>
+        <div id="wMsg" class="msg"></div>
       </div>
       <div class="admPane" data-t="iap">
         <p class="hint" style="margin-top:0">A <b>program</b> (IAP) is a named group of <b>module titles</b>. Every enrollment in one of those modules is labelled with the program, so it appears under <b>Program</b> on the dashboard and can be used in user permissions. A module belongs to one program at a time.</p>
@@ -634,7 +745,8 @@
         <div class="dashpick"><span class="dpl">Dashboards this user can open</span>
           <label><input type="checkbox" id="fTD"> Training &amp; Development</label>
           <label class="cabox2"><input type="checkbox" id="fCA"> Corrective Actions <small>(confidential HR data)</small></label>
-          <label><input type="checkbox" id="fGO1"> Go1 Training</label></div>
+          <label><input type="checkbox" id="fGO1"> Go1 Training</label>
+          <label><input type="checkbox" id="fWD"> Workday (HR tasks)</label></div>
         <div class="pnote" id="pickNote"></div>
         <div id="pickers">
           <div class="pcol"><div class="ph">Locations <span id="cLoc"></span><button class="pclear" data-k="locs">Clear</button></div><div class="plist" id="pLoc"></div></div>
@@ -1340,6 +1452,7 @@ let TD_META={src:'',n:0,updated:null};
 const fmtWhen=(u,time)=>u?new Date(u).toLocaleString('en-US',time?{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}:{month:'short',day:'numeric',year:'numeric'}):'';
 function renderMeta(){
   const el=document.getElementById('meta');
+  if(VIEW==='wd'){ el.textContent='Workday · HR document tasks'; return; }
   if(VIEW==='ca') el.textContent='Employee relations documents'+(CA.updated?' · updated '+fmtWhen(CA.updated,true):'')+' · '+nf.format(CA.n)+' actions';
   else el.textContent=(TD_META.src||'')+(TD_META.updated?' · updated '+fmtWhen(TD_META.updated):'')+' · '+nf.format(TD_META.n)+' rows';
 }
@@ -1348,9 +1461,9 @@ function setMeta(src,n,updated){
   subEl.innerHTML='Learning &amp; compliance training activity<br><b style="color:#fff">'+nf.format(n)+'</b> enrollment records';
 }
 function startSession(payload,keyRaw,salt,man){
-  SESSION={email:payload.profile.email,profile:payload.profile,keyRaw,salt,manifest:man};
+  SESSION={email:payload.profile.email,profile:payload.profile,keyRaw,salt,manifest:man,wd:payload.wd||null};
   setPrograms(payload.programs);
-  ADMIN=payload.profile.role==='admin'?{raw:payload.data,users:payload.users||[],source:payload.source,updated:payload.updated,dirty:false,caDocs:payload.caDocs||null,people:payload.people||null,caUpdated:payload.caUpdated||null,docRepo:payload.docRepo||null,mail:payload.mail||null,caSource:payload.caSource||null,groups:payload.groups||[]}:null;
+  ADMIN=payload.profile.role==='admin'?{raw:payload.data,users:payload.users||[],source:payload.source,updated:payload.updated,dirty:false,caDocs:payload.caDocs||null,people:payload.people||null,caUpdated:payload.caUpdated||null,docRepo:payload.docRepo||null,mail:payload.mail||null,caSource:payload.caSource||null,groups:payload.groups||[],wdRepo:payload.wdRepo||null}:null;
   M=buildModel(payload.data); setDefaults(); update(); setMeta(payload.source,M.n,payload.updated);
   const p=payload.profile;
   document.getElementById('who').textContent=(p.name?p.name+' · ':'')+p.email+(p.role==='admin'?' (Admin)':'');
@@ -1364,7 +1477,7 @@ function startSession(payload,keyRaw,salt,man){
 }
 function scopeText(p,role){
   if(role==='admin') return 'You can see all dashboards and all data.';
-  const dash='Dashboards: '+[p.td!==false?'Training & Development':null,p.ca?'Corrective Actions':null,p.go1!==false?'Go1 Training':null].filter(Boolean).join(', ');
+  const dash='Dashboards: '+[p.td!==false?'Training & Development':null,p.ca?'Corrective Actions':null,p.go1!==false?'Go1 Training':null,p.wd?'Workday':null].filter(Boolean).join(', ');
   if(!hasLimits(p)) return dash+'\nAll locations, modules and programs.';
   const parts=[];
   if(p.locs&&p.locs.length) parts.push('Locations: '+p.locs.join(', '));
@@ -1486,7 +1599,7 @@ document.querySelectorAll('#admTabs button').forEach(b=>b.onclick=()=>showTab(b.
 function showTab(t){
   document.querySelectorAll('#admTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   document.querySelectorAll('.admPane').forEach(p=>p.style.display=p.dataset.t===t?'block':'none');
-  if(t==='users') renderUsers(); if(t==='data') renderData(); if(t==='iap') renderIap(); if(t==='week') renderWeek(); if(t==='publish') renderPublish();
+  if(t==='users') renderUsers(); if(t==='data'){ renderData(); renderWdRepo(); } if(t==='iap') renderIap(); if(t==='week') renderWeek(); if(t==='publish') renderPublish();
 }
 function markDirty(){ADMIN.dirty=true; $('#dirty').style.display='inline-flex';}
 function adminChoices(){
@@ -1500,10 +1613,10 @@ function summary(arr,word){ if(!arr||!arr.length) return '<span class="all">All<
 /* ---------------- Groups: one set of permissions shared by many users ----------------
    Members' own permissions are kept as a copy of their group's, so publishing, the dashboards and the
    rest of the admin screens work exactly as before. */
-const clonePerms=p=>({locs:[...(p.locs||[])],mods:[...(p.mods||[])],progs:[...(p.progs||[])],ca:!!p.ca,td:p.td!==false,go1:p.go1!==false});
+const clonePerms=p=>({locs:[...(p.locs||[])],mods:[...(p.mods||[])],progs:[...(p.progs||[])],ca:!!p.ca,td:p.td!==false,go1:p.go1!==false,wd:!!p.wd});
 const groupOf=u=>u&&u.group&&ADMIN.groups?ADMIN.groups.find(g=>g.id===u.group)||null:null;
 function syncGroup(g){ for(const u of ADMIN.users) if(u.group===g.id&&u.role!=='admin') u.perms=clonePerms(g.perms); }
-function dashCells(p,admin){ return [['T&amp;D',admin||p.td!==false],['Corr. Actions',admin||!!p.ca],['Go1',admin||p.go1!==false]].map(([n,on])=>'<span class="db'+(on?' on':'')+'">'+n+'</span>').join(''); }
+function dashCells(p,admin){ return [['T&amp;D',admin||p.td!==false],['Corr. Actions',admin||!!p.ca],['Go1',admin||p.go1!==false],['Workday',admin||!!p.wd]].map(([n,on])=>'<span class="db'+(on?' on':'')+'">'+n+'</span>').join(''); }
 function renderGroups(){
   const G=(ADMIN.groups||[]).slice().sort((a,b)=>a.name.localeCompare(b.name));
   $('#gCount').textContent=G.length+' group'+(G.length===1?'':'s');
@@ -1522,9 +1635,9 @@ function renderGroups(){
 $('#gAdd').onclick=()=>editGroup(null);
 function editGroup(id){
   const g=id?ADMIN.groups.find(x=>x.id===id):null;
-  EDIT={kind:'group',orig:g,perms:g?clonePerms(g.perms):{locs:[],mods:[],progs:[],ca:false,td:true,go1:true},
+  EDIT={kind:'group',orig:g,perms:g?clonePerms(g.perms):{locs:[],mods:[],progs:[],ca:false,td:true,go1:true,wd:false},
         members:new Set(ADMIN.users.filter(u=>g&&u.group===g.id).map(u=>u.email))};
-  $('#fCA').checked=EDIT.perms.ca; $('#fTD').checked=EDIT.perms.td; $('#fGO1').checked=EDIT.perms.go1;
+  $('#fCA').checked=EDIT.perms.ca; $('#fTD').checked=EDIT.perms.td; $('#fGO1').checked=EDIT.perms.go1; $('#fWD').checked=!!EDIT.perms.wd;
   $('#fTitle').textContent=g?'Edit group':'New group'; $('#gName').value=g?g.name:''; $('#memSearch').value=''; $('#modSearch').value='';
   $('#fErr').textContent=''; $('#gFields').style.display=''; $('#uFields').style.display='none';
   $('#fSave').textContent='Save group'; document.querySelector('.dashpick .dpl').textContent='Dashboards this group can open';
@@ -1577,8 +1690,8 @@ async function saveGroup(){
   const name=$('#gName').value.replace(/\s+/g,' ').trim();
   if(!name){ err.textContent='Enter a name for the group.'; return; }
   if((ADMIN.groups||[]).some(x=>x.name.toLowerCase()===name.toLowerCase()&&x!==EDIT.orig)){ err.textContent='A group with that name already exists.'; return; }
-  EDIT.perms.td=$('#fTD').checked; EDIT.perms.ca=$('#fCA').checked; EDIT.perms.go1=$('#fGO1').checked;
-  if(!EDIT.perms.td&&!EDIT.perms.ca&&!EDIT.perms.go1){ err.textContent='Tick at least one dashboard for this group.'; return; }
+  EDIT.perms.td=$('#fTD').checked; EDIT.perms.ca=$('#fCA').checked; EDIT.perms.go1=$('#fGO1').checked; EDIT.perms.wd=$('#fWD').checked;
+  if(!EDIT.perms.td&&!EDIT.perms.ca&&!EDIT.perms.go1&&!EDIT.perms.wd){ err.textContent='Tick at least one dashboard for this group.'; return; }
   if((EDIT.perms.td||EDIT.perms.ca)&&!hasLimits(EDIT.perms)&&!confirm('This group has no location/module/program limits, so its members will see ALL data in the dashboards ticked. Continue?')) return;
   // new accounts from the training data
   const newp=[...(EDIT.newp||new Map()).entries()].map(([e,v])=>({p:EDIT.people.find(x=>x.emp===e),email:normEmail(v.email)}));
@@ -1615,7 +1728,7 @@ function fillGroupSelect(sel){
   $('#fGroup').value=sel||'';
 }
 $('#fGroup').onchange=()=>{ const g=ADMIN.groups&&ADMIN.groups.find(x=>x.id===$('#fGroup').value);
-  if(g){ EDIT.perms=clonePerms(g.perms); $('#fCA').checked=EDIT.perms.ca; $('#fTD').checked=EDIT.perms.td; $('#fGO1').checked=EDIT.perms.go1; } renderPickers(); };
+  if(g){ EDIT.perms=clonePerms(g.perms); $('#fCA').checked=EDIT.perms.ca; $('#fTD').checked=EDIT.perms.td; $('#fGO1').checked=EDIT.perms.go1; $('#fWD').checked=!!EDIT.perms.wd; } renderPickers(); };
 
 function renderUsers(){
   renderMailState(); renderGroups();
@@ -1627,7 +1740,7 @@ function renderUsers(){
     '<td>'+(u.role==='admin'?'<span class="all">All</span>':summary(u.perms.locs,'locations'))+'</td>'+
     '<td>'+(u.role==='admin'?'<span class="all">All</span>':summary(u.perms.progs,'programs'))+'</td>'+
     '<td>'+(u.role==='admin'?'<span class="all">All</span>':summary(u.perms.mods,'modules'))+'</td>'+
-    '<td class="dbs">'+[['T&amp;D',u.role==='admin'||u.perms.td!==false],['Corr. Actions',u.role==='admin'||!!u.perms.ca],['Go1',u.role==='admin'||u.perms.go1!==false]].map(([n,on])=>'<span class="db'+(on?' on':'')+'">'+n+'</span>').join('')+'</td>'+
+    '<td class="dbs">'+[['T&amp;D',u.role==='admin'||u.perms.td!==false],['Corr. Actions',u.role==='admin'||!!u.perms.ca],['Go1',u.role==='admin'||u.perms.go1!==false],['Workday',u.role==='admin'||!!u.perms.wd]].map(([n,on])=>'<span class="db'+(on?' on':'')+'">'+n+'</span>').join('')+'</td>'+
     '<td class="act"><button data-e="'+esc(u.email)+'" class="edit">Edit</button><button data-e="'+esc(u.email)+'" class="del">Remove</button></td></tr>').join('');
   $('#uBody').querySelectorAll('.edit').forEach(b=>b.onclick=()=>editUser(b.dataset.e));
   $('#uBody').querySelectorAll('.del').forEach(b=>b.onclick=()=>{
@@ -1732,8 +1845,8 @@ $('#bSave').onclick=async()=>{
 let EDIT=null;
 function editUser(email){
   const u=email?ADMIN.users.find(x=>x.email===email):null;
-  EDIT={kind:'user',orig:u, perms:{locs:[...(u?.perms.locs||[])],mods:[...(u?.perms.mods||[])],progs:[...(u?.perms.progs||[])],ca:!!(u?.perms.ca),td:!(u&&u.perms.td===false),go1:!(u&&u.perms.go1===false)}};
-  $('#fCA').checked=EDIT.perms.ca; $('#fTD').checked=EDIT.perms.td; $('#fGO1').checked=EDIT.perms.go1;
+  EDIT={kind:'user',orig:u, perms:{locs:[...(u?.perms.locs||[])],mods:[...(u?.perms.mods||[])],progs:[...(u?.perms.progs||[])],ca:!!(u?.perms.ca),td:!(u&&u.perms.td===false),go1:!(u&&u.perms.go1===false),wd:!!(u&&u.perms.wd)}};
+  $('#fCA').checked=EDIT.perms.ca; $('#fTD').checked=EDIT.perms.td; $('#fGO1').checked=EDIT.perms.go1; $('#fWD').checked=EDIT.perms.wd;
   $('#fTitle').textContent=u?'Edit user':'Add user';
   $('#fEmail').value=u?u.email:''; $('#fName').value=u?.name||''; $('#fRole').value=u?.role||'viewer';
   $('#fPass').value=''; $('#fPass').placeholder=u?'Leave blank to keep current password':'Required for new users';
@@ -1788,14 +1901,14 @@ $('#fSave').onclick=async()=>{
   if(!EDIT.orig&&!pass){err.textContent='Set a password for the new user (use Generate).';return;}
   if(pass&&pass.length<8){err.textContent='Password must be at least 8 characters.';return;}
   if(EDIT.orig&&EDIT.orig.role==='admin'&&role!=='admin'&&ADMIN.users.filter(x=>x.role==='admin').length<2){err.textContent='You must keep at least one admin.';return;}
-  const pTD=$('#fTD').checked, pCA=$('#fCA').checked, pGO1=$('#fGO1').checked;
+  const pTD=$('#fTD').checked, pCA=$('#fCA').checked, pGO1=$('#fGO1').checked, pWD=$('#fWD').checked;
   const gsel=role!=='admin'&&ADMIN.groups?ADMIN.groups.find(g=>g.id===$('#fGroup').value):null;
-  if(!gsel&&role!=='admin'&&!pTD&&!pCA&&!pGO1){err.textContent='Tick at least one dashboard for this user.';return;}
+  if(!gsel&&role!=='admin'&&!pTD&&!pCA&&!pGO1&&!pWD){err.textContent='Tick at least one dashboard for this user.';return;}
   if(!gsel&&role!=='admin'&&(pTD||pCA)&&!hasLimits(EDIT.perms)&&!confirm('This viewer has no location/module/program limits and will see ALL data in the dashboards ticked. Continue?')) return;
   const btn=$('#fSave'); btn.disabled=true; btn.textContent='Saving…';
   try{
     const u=EDIT.orig||{};
-    u.email=email; u.name=name; u.role=role; EDIT.perms.ca=$('#fCA').checked; EDIT.perms.td=$('#fTD').checked; EDIT.perms.go1=$('#fGO1').checked; u.perms=role==='admin'?{locs:[],mods:[],progs:[],ca:true,td:true,go1:true}:gsel?clonePerms(gsel.perms):EDIT.perms;
+    u.email=email; u.name=name; u.role=role; EDIT.perms.ca=$('#fCA').checked; EDIT.perms.td=$('#fTD').checked; EDIT.perms.go1=$('#fGO1').checked; EDIT.perms.wd=$('#fWD').checked; u.perms=role==='admin'?{locs:[],mods:[],progs:[],ca:true,td:true,go1:true,wd:true}:gsel?clonePerms(gsel.perms):EDIT.perms;
     if(gsel) u.group=gsel.id; else delete u.group;
     if(pass){ const salt=crypto.getRandomValues(new Uint8Array(16)); u.salt=b64e(salt); u.key=b64e(await deriveKeyRaw(pass,salt)); }
     if(!EDIT.orig) ADMIN.users.push(u);
@@ -1868,6 +1981,428 @@ $('#pBtn').onclick=async()=>{
   catch(err){ plog('Error: '+err.message,'bad'); }
   finally{ btn.disabled=false; }
 };
+/* ================= Workday: document templates =================
+   Built from the most recent real documents of each type in the employee relations folders.
+   Each template = fields to fill in + a renderer that produces the printable letter. */
+const WD_POLICIES=[
+  {k:'directive', label:'Refusing a reasonable directive', text:"Refusing to follow a reasonable directive of any member of the Company's supervisory or administrative staff."},
+  {k:'substandard', label:'Substandard performance', text:"Substandard job performance, including neglecting one's duties or responsibilities, or refusing to perform work as assigned."},
+  {k:'dismissal', label:'Early class dismissal', text:'Dismissal of class or allowing students to depart school before approved termination time without proper permission from the appropriate supervisor.'},
+  {k:'substance', label:'Substance Abuse Policy', text:"Lincoln's Substance Abuse Policy: Lincoln Educational Services has a significant interest in promoting a safe and productive atmosphere, free of substance abuse. Possession, sale, distribution, or being under the influence of illegal drugs on Company premises or while on Company business is prohibited. Consumption of alcoholic beverages while on Company premises is also prohibited unless authorized by management at a corporate function. However, under no circumstances will employees who are under the influence of either drugs or alcohol be tolerated while on Company premises or on Company business. Behavior contrary to the Company's Drug and Alcohol policy may result in disciplinary action up to and including termination."},
+  {k:'ethics', label:'Code of Ethics Policy', text:"Lincoln's Code of Ethics Policy: Lincoln Educational Services employees shall conduct business in a professional manner. Lincoln Educational Services employees shall at all times reflect the highest credit upon themselves, the School, the Company and the field of proprietary vocational technical training, and shall always strive to enhance the reputation of their profession through their conduct as employees of Lincoln Educational Services."}
+];
+const WD_HDR=[
+  {k:'date',label:'Date',type:'date'},
+  {k:'toName',label:'To (employee)'},{k:'toTitle',label:'Employee job title'},
+  {k:'fromName',label:'From'},{k:'fromTitle',label:'From job title'},
+  {k:'cc',label:'Cc (one per line)',type:'textarea',rows:3,def:'Personnel File'},
+  {k:'re',label:'Re',def:'Disciplinary Action'}];
+const WD_DISC=(title,closing)=>({
+  name:title,
+  fields:[...WD_HDR,
+    {k:'reason',label:'Reason for disciplinary action',type:'textarea',rows:9,wide:true,hint:'What happened, with dates, times and any earlier warnings.'},
+    {k:'policies',label:'Policies / General Rules of Conduct violated',type:'textarea',rows:5,wide:true,presets:true,hint:'Click a policy below to add it, or type your own (one per line).'},
+    {k:'corrective',label:'Corrective action (what must change)',type:'textarea',rows:6,wide:true},
+    {k:'closing',label:'Consequence statement',type:'textarea',rows:2,wide:true,def:closing}],
+  render:t=>wdLetter(title,'Reason for Disciplinary Action:',t,true)
+});
+const WD_TEMPLATES={
+  verbal: WD_DISC('Verbal Warning','Any further instances of violation of the above policies and/or General Rules of Conduct will result in further disciplinary action.'),
+  written:WD_DISC('Written Warning','Any further instances of failure to follow the above policies and/or General Rules of Conduct will result in further disciplinary action up to and including termination of your employment.'),
+  final:  WD_DISC('Final Written Warning','Any further instances of violation of the above policies and/or General Rules of Conduct will result in further disciplinary action, up to and including termination of your employment.'),
+  loc:{
+    name:'Letter of Concern',
+    fields:[...WD_HDR.map(f=>f.k==='re'?{...f,def:'Performance'}:f),
+      {k:'reason',label:'Reason for letter of concern',type:'textarea',rows:10,wide:true,def:'This letter is to review concerns regarding your performance.\n\n'},
+      {k:'corrective',label:'Corrective action',type:'textarea',rows:7,wide:true},
+      {k:'closing',label:'Next steps statement',type:'textarea',rows:3,wide:true,def:'Failure to meet the directives and performance metrics listed in this letter will lead to your performance being addressed in an Employee Success Plan ("ESP"). Failure to demonstrate meaningful performance improvement may result in termination of your employment without the issuance of an ESP.'}],
+    render:t=>wdLetter('Letter of Concern','Reason for Letter of Concern:',t,false)
+  },
+  esp:{
+    name:'Employee Success Plan',
+    fields:[
+      {k:'toName',label:"Employee's name"},{k:'toTitle',label:'Employee job title'},
+      {k:'fromName',label:"Supervisor's name"},{k:'fromTitle',label:'Supervisor job title'},
+      {k:'dept',label:'Department'},{k:'location',label:'Location'},
+      {k:'days',label:'ESP length (days)',type:'number',def:'30'},{k:'date',label:"Today's date",type:'date'},
+      {k:'start',label:'ESP start date',type:'date'},{k:'end',label:'ESP end date',type:'date'},
+      {k:'history',label:'Section One: History',type:'textarea',rows:7,wide:true,hint:'Coaching and guidance already given, with dates.'},
+      {k:'concerns',label:'Section Two: Performance concerns',type:'textarea',rows:7,wide:true,hint:'Number each concern (1., 2., 3.).'},
+      {k:'goals',label:'Section Three: Performance goals',type:'textarea',rows:8,wide:true,hint:'Measurable goals for each concern.'},
+      {k:'followup',label:'Section Four: Follow-up',type:'textarea',rows:2,wide:true,def:'Every Friday, I will follow up with you on your weekly performance goals.'}],
+    render:t=>wdEsp(t)
+  },
+  sep:{
+    name:'Separation Agreement',
+    fields:[
+      {k:'toName',label:'Employee name'},
+      {k:'age',label:'Employee age group',type:'select',opts:['40 or over','Under 40'],def:'40 or over',hint:'40 or over gets 21 days to consider (OWBPA); under 40 gets 14 days.'},
+      {k:'termDate',label:'Termination effective date',type:'date'},
+      {k:'severance',label:'Severance amount ($)',hint:'e.g. 9,267.20'},
+      {k:'cobraDate',label:'COBRA coverage effective date',type:'date'},
+      {k:'property',label:'Company property the employee may keep (optional)',hint:'e.g. the Company laptop and camera — leave blank if none'},
+      {k:'date',label:'Date prepared',type:'date'}],
+    render:t=>wdSep(t)
+  }
+};
+const WD_TYPE_ORDER=['verbal','written','final','loc','esp','sep'];
+
+/* ---- rendering helpers (all user text is escaped) ---- */
+const wdD=v=>{ if(!v) return '________________'; const d=new Date(v+'T12:00:00'); return isNaN(d)?esc(v):d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); };
+const wdS=v=>{ if(!v) return ''; const d=new Date(v+'T12:00:00'); return isNaN(d)?esc(v):(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear(); };
+const wdV=(t,k)=>t.f&&t.f[k]!=null&&String(t.f[k]).trim()!==''?String(t.f[k]):'';
+const wdBlank=(v,w)=>v?esc(v):'<span class="blank" style="min-width:'+(w||140)+'px"></span>';
+function wdParas(v){   // blank line = new paragraph; lines starting with - • or 1. become list items
+  if(!v) return '<p class="todo">[not filled in]</p>';
+  return String(v).split(/\n\s*\n/).map(block=>{
+    const lines=block.split('\n').filter(l=>l.trim()!=='');
+    if(lines.length&&lines.every(l=>/^\s*([-•*]|\d+[.)])\s+/.test(l)))
+      return '<ul>'+lines.map(l=>'<li>'+esc(l.replace(/^\s*([-•*])\s+/,''))+'</li>').join('')+'</ul>';
+    return '<p>'+lines.map(esc).join('<br>')+'</p>';
+  }).join('');
+}
+function wdSign(t){
+  const a=(wdV(t,'toName')+(wdV(t,'toTitle')?', '+wdV(t,'toTitle'):'')), b=(wdV(t,'fromName')+(wdV(t,'fromTitle')?', '+wdV(t,'fromTitle'):''));
+  return '<div class="comments"><b>Employee Comments:</b><div class="line"></div><div class="line"></div><div class="line"></div></div>'+
+    '<p>If you disagree with any information contained in this document, you should submit a written statement within seven days of receiving this document.</p>'+
+    '<p>I read and understand this disciplinary action.</p>'+
+    '<table class="sig"><tr><td class="sl"></td><td class="gap"></td><td class="sd"></td></tr><tr><td>'+esc(a)+'</td><td></td><td>Date</td></tr>'+
+    '<tr class="sp"><td colspan="3"></td></tr><tr><td class="sl"></td><td class="gap"></td><td class="sd"></td></tr><tr><td>'+esc(b)+'</td><td></td><td>Date</td></tr></table>';
+}
+function wdLetter(title,reasonHead,t,policy){
+  const cc=wdV(t,'cc').split('\n').map(s=>s.trim()).filter(Boolean);
+  const first=(wdV(t,'toName').split(/\s+/)[0]||'');
+  return '<h1>'+esc(title)+'</h1><table class="memo">'+
+    '<tr><td>Date:</td><td>'+wdD(wdV(t,'date'))+'</td></tr>'+
+    '<tr><td>To:</td><td>'+wdBlank(wdV(t,'toName'))+(wdV(t,'toTitle')?', '+esc(wdV(t,'toTitle')):'')+'</td></tr>'+
+    '<tr><td>From:</td><td>'+wdBlank(wdV(t,'fromName'))+(wdV(t,'fromTitle')?', '+esc(wdV(t,'fromTitle')):'')+'</td></tr>'+
+    (cc.length?'<tr><td>Cc:</td><td>'+cc.map(esc).join('<br>')+'</td></tr>':'')+
+    '<tr><td>Re:</td><td>'+wdBlank(wdV(t,'re'))+'</td></tr></table>'+
+    '<h2>'+esc(reasonHead)+'</h2>'+(first&&title!=='Letter of Concern'?'<p>'+esc(first)+',</p>':'')+wdParas(wdV(t,'reason'))+
+    (policy?'<p>Your actions are in violation of Lincoln\'s policies and General Rules of Conduct, including:</p>'+wdParas(wdV(t,'policies').split('\n').filter(s=>s.trim()).map(s=>/^\s*[-•*]/.test(s)?s:'- '+s).join('\n')):'')+
+    '<h2>Corrective Action:</h2>'+wdParas(wdV(t,'corrective'))+wdParas(wdV(t,'closing'))+wdSign(t);
+}
+function wdEsp(t){
+  const row=(a,av,b,bv)=>'<tr><td>'+a+'</td><td>'+wdBlank(av)+'</td><td>'+b+'</td><td>'+wdBlank(bv)+'</td></tr>';
+  return '<h1>Employee Success Plan</h1><table class="esp">'+
+    row("Employee's Name:",wdV(t,'toName'),'Job Title:',wdV(t,'toTitle'))+
+    row("Supervisor's Name:",wdV(t,'fromName'),'Job Title:',wdV(t,'fromTitle'))+
+    row('Department:',wdV(t,'dept'),'Location:',wdV(t,'location'))+
+    '<tr><td>ESP Length:</td><td>'+wdBlank(wdV(t,'days'),40)+' Days</td><td>ESP Dates:</td><td>'+(wdV(t,'start')?wdS(wdV(t,'start')):'____')+' - '+(wdV(t,'end')?wdS(wdV(t,'end')):'____')+'</td></tr>'+
+    '<tr><td>Today\'s Date:</td><td colspan="3">'+wdD(wdV(t,'date'))+'</td></tr></table>'+
+    '<h2>Section One: History</h2>'+wdParas(wdV(t,'history'))+
+    '<p>This document is intended to ensure that you understand the level of performance expected of you and the possible consequences of not meeting the conditions of the ESP as outlined below.</p>'+
+    '<h2>Section Two: Performance Concerns</h2>'+wdParas(wdV(t,'concerns'))+
+    '<h2>Section Three: Performance Goals</h2>'+wdParas(wdV(t,'goals'))+
+    '<h2>Section Four: Follow-Up</h2>'+wdParas(wdV(t,'followup'))+
+    '<h2>Section Five: Corrective Action</h2>'+
+    '<p>I want to reiterate that the current level of performance is unacceptable. I believe you are capable of great things and I look forward to partnering with you in your efforts to make the necessary improvements to improve your performance. I am confident if you remain focused and enthusiastic you will achieve your performance goals. You can count on my support to assist you with difficult issues as they arise or obstacles that hinder you from meeting these goals.</p>'+
+    '<p>Improvement must occur immediately and must be sustained. If at any time during the specified time frame you fail to make the appropriate effort necessary to reach the goals set forth in this ESP, disciplinary action up to and including separation from the company may occur. A decrease in performance after successfully completing the Employee Success Plan may result in being dismissed without the issuance of another warning or ESP.</p>'+
+    '<p>Failure to improve your performance to the levels included in this ESP will result in further disciplinary action, up to and including termination of your employment.</p>'+wdSign(t);
+}
+function wdSep(t){
+  const over=wdV(t,'age')!=='Under 40', days=over?'twenty-one (21)':'fourteen (14)', dn=over?'21':'14';
+  const prop=wdV(t,'property');
+  const nd=over?"Nothing in this agreement prevents Employee from reporting any activity to any governmental authorities, including the SEC or EEOC, or participating in any whistleblower program.  However, Employee agrees not to make statements about the Company which are maliciously untrue, such that they are made with knowledge of their falsity or with reckless disregard to their truth or falsity."
+    :"Nothing in this agreement prevents Employee from reporting any activity to any governmental authorities, including the SEC or EEOC, or participating in any whistleblower program.  However, Employee agrees to refrain from making statements about the Company that are disparaging, demeaning or defamatory and which are maliciously untrue, such that they are made with knowledge of their falsity or with reckless disregard to their truth or falsity.  This includes, but is not limited to, communications on social media websites such as Facebook, X, LinkedIn, Instagram, or Glassdoor, on blogs, by text or email or other electronic means.";
+  const P=(n,h,body)=>'<p class="num"><b>'+n+'.&nbsp; '+h+':</b>&nbsp; '+body+'</p>';
+  return '<h1>Separation and Release Agreement</h1>'+
+  '<p class="ind">THIS SEPARATION AND RELEASE AGREEMENT ("Agreement") is made between '+wdBlank(wdV(t,'toName'),180)+' ("Employee" or "you") and Lincoln Technical Institute, Inc., and/or its subsidiaries ("Employer") and is in consideration of their mutual undertakings as set forth in this Agreement.</p>'+
+  '<p class="ind">Employee\'s employment with Employer was terminated.  In order to assist you in your transition to new employment and to mitigate financial hardship, Employer has decided to offer you severance pay set forth below at Paragraph 3, to which you are not otherwise entitled.  The purpose of this Agreement is to clearly set forth the terms and conditions of your departure.  Therefore, the parties agree as follows:</p>'+
+  P(1,'Nonadmission of Liability','This Agreement shall not be construed as an admission by Employer that it acted wrongfully or unlawfully with respect to your employment or your termination of employment.  Additionally, this Agreement shall not be construed as an admission by Employee of any misconduct.')+
+  P(2,'Termination of Employment','Your employment with Employer was terminated effective '+wdD(wdV(t,'termDate'))+'.')+
+  P(3,'Severance Pay','Employer will pay you $'+wdBlank(wdV(t,'severance').replace(/^\$/,''),80)+' less all lawful or required deductions as severance pay. The payment will be made in a lump sum, by corporate check made payable to you within 14 days after execution of this Agreement or 14 days after the effective termination date as stated above, whichever is later, but no earlier than 8 days after Employee signs this Agreement.  Should Employer rehire Employee, Employee may be required to repay some or all of Employee\'s severance pay in accordance with the Severance and Retention Pay policy 1-08.')+
+  P(4,'Benefits Continuation','If applicable, effective '+wdD(wdV(t,'cobraDate'))+', you and/or your covered spouse and dependents (if any) may elect a temporary extension of medical, dental and vision plan coverage at group rates (called "COBRA continuation coverage").  Employer will provide you and/or your covered spouse with a separate notice summarizing the COBRA continuation coverage rights and obligations, as well as an election form.')+
+  P(5,'Accrued, Unused Vacation','Employer will provide you with payment for all accrued, unused vacation on your next regularly scheduled paycheck, which shall be subject to all lawful or required deductions.')+
+  P(6,'No Other Compensation','You acknowledge that, other than your accrued, unused vacation to which Employer has agreed to pay, you have been paid all other compensation or benefits which were owed by Employer, and that Employer is not obligated to pay or provide you with any further compensation or benefits of any nature.')+
+  P(7,'Unemployment Compensation','If you file for unemployment compensation benefits, Employer will not contest your eligibility for unemployment compensation, but if in its good faith view it is required to provide information regarding any claim from unemployment compensation benefits, it will provide truthful and accurate information.')+
+  P(8,'References','All requests for references will be routed to Employer\'s Corporate Human Resources department or its designee.  Employer\'s response shall be limited to the dates of your employment and your job title.  No additional information will be released.')+
+  P(9,'Release of Claims','In exchange for the severance pay, which you are not otherwise entitled to receive, you and your successors and assigns forever release and discharge Employer, any of Employer\'s parent, subsidiary or related companies, any Employer-sponsored employee benefit plans in which you participate, and all of their respective officers, directors, trustees, shareholders, agents, employees, employees\' spouses, and all of their successors and assigns (collectively "Releasees") from any and all claims, actions, causes of action, rights, or damages related in any way to your employment by Employer, including costs and attorneys\' fees (collectively "Claims") whether known, unknown, or later discovered, arising from any acts or omissions that occurred prior to the date you sign this Agreement.')+
+  '<p class="ind">Without limiting the scope of the foregoing provision in any way, you specifically release all claims relating to or arising out of any aspect of your employment with Lincoln Technical Institute, Inc., and/or its subsidiaries or related entities, including but not limited to, all claims under Title VII of the Civil Rights Act of 1964, the Civil Rights Act of 1991 and the laws amended thereby; the Employee Retirement Income Security Act of 1974, as amended; the Age Discrimination in Employment Act of 1967; The Older Workers Benefit Protection Act of 1990; the Americans with Disabilities Act; the Family and Medical Leave Act of 1993; the Fair Labor Standards Act of 1963; any federal, state or local laws against discrimination or harassment or retaliation; any federal or state whistleblower law; any contract of employment, express or implied; any provision of the Constitution of the United States or of any particular State; and any other law, common or statutory, of the United States, or any particular State; any claim for the negligent and/or intentional infliction of emotional distress or specific intent to harm; any claims for attorneys fees, costs and/or expenses; any claims for unpaid or withheld wages, severance pay, including all claims for severance under the Company\'s Severance and Retention Pay policy 1-08, benefits, bonuses, commissions and/or other compensation of any kind; and/or any other federal, state or local human rights, civil rights, wage and hour, wage payment, pension or labor laws, rules and/or regulations; all claims growing out of any legal restrictions on Lincoln Technical Institute, Inc., and/or its subsidiaries\' right to hire and/or terminate its employees, including all claims that were asserted and/or that could have been asserted by you and all claims for breach of promise, public policy, negligence, retaliation, defamation, impairment of economic opportunity, loss of business opportunity, fraud, misrepresentation, etc.</p>'+
+  '<p class="ind">This release does not apply to claims that may arise after the date this Agreement is executed; to statutory claims for state unemployment insurance, worker\'s compensation, disability insurance benefits (other than discrimination claims for such benefits); or to any other claims that cannot be waived herein under state or federal law.</p>'+
+  P(10,'No Claims','You represent that you have not filed any Claim against Employer or Releasees, that you will not cooperate or assist with any other person or entity in filing any Claim against Employer or Releasees, and that you will not do so at any time in the future concerning Claims released in this Agreement; provided, however, that this will not limit you from filing an action to enforce the terms of this Agreement.')+
+  P(11,'No Representations','You acknowledge that, except as expressly set forth herein, no representations of any kind or character have been made to you by Employer or by any of its agents, representatives, or attorneys to induce the execution of this Agreement.')+
+  P(12,'Voluntary Execution of Agreement','You acknowledge that you have carefully read and fully understand all of the provisions of this Agreement, that you understand the significance and consequences of this Agreement, that it is voluntary, that it has not been entered into as a result of any coercion, duress or undue influence, and expressly confirm that it is to be given full force and effect according to all of its terms, including those relating to unknown Claims.  You acknowledge that you had full opportunity to discuss any and all aspects of this Agreement with legal counsel, and have availed yourself of that opportunity to the extent desired.  You acknowledge that you have carefully read and fully understand all of the provisions of this Agreement and have signed this Agreement only after full reflection and analysis.')+
+  P(13,'Consideration Period','You acknowledge that you had full opportunity to discuss any and all aspects of this Agreement with legal counsel, that you have had '+days+' days to consult with counsel to consider whether to sign, or if you chose to forego legal counsel, you did so freely and knowingly.')+
+  P(14,'Revocation Period','You acknowledge that you will have seven (7) days after you sign this Agreement to revoke your acceptance of this Agreement, and that this Agreement will not become effective until this seven (7) day period has expired.  Notice of revocation of this Agreement can be made by delivering written notice to Employer\'s SVP, Chief Human Resources Officer: 14 Sylvan Way, Suite A, Parsippany, NJ 07054.')+
+  P(15,'Return of Property','You acknowledge that you have returned to Employer all company-owned property in your possession'+(prop?' except for '+esc(prop)+' which you may retain':'')+', specifically including all keys and keycard badges, all company-owned equipment, and all company documents, and computer-stored or transmitted information, specifically including all trade secrets, and/or confidential company information.')+
+  P(16,'Severability','If any provision or any portion or any provision of this Agreement becomes or is declared by a court of competent jurisdiction to be illegal, invalid or unenforceable, the remaining provisions of this Agreement shall continue in full force and effect.')+
+  P(17,'Non-Disparagement',nd)+
+  P(18,'Confidentiality','Employee shall not disseminate the financial terms of this Agreement to any person or entity not a party to this Agreement, except (a) by written agreement of the parties, (b) pursuant to a valid court order or subpoena, (c) as required by law, or (d) as otherwise provided in this section.  Employee may disclose the terms of this Agreement to Employee\'s attorneys, financial advisors and/or immediate family, provided Employee first advises them that the financial terms must not be further disclosed.')+
+  P(19,'Binding Effect; Successors','This Agreement is binding upon and shall inure to the benefit of anyone who succeeds to the rights, interests or responsibilities of the Parties.  Employee makes the releases contained in this Agreement for the benefit of the Employer and all who succeed to its rights, interests or responsibilities.')+
+  P(20,'Entire Agreement','This Agreement sets forth the entire understanding between the parties in connection with its subject matter and supersedes all prior written or oral agreements or understandings concerning the subject matter of this Agreement. You acknowledge that in signing this Agreement, you have not relied upon any representation or statement not set forth in this Agreement made by Employer or any of its representatives.')+
+  P(21,'Governing Law','This Agreement shall be governed by and construed in accordance with the laws of the state of New Jersey, without reference to its conflict of laws principles.  Any action regarding the enforcement or interpretation of this Agreement shall be commenced only in the state of New Jersey.')+
+  '<h2 style="text-align:center">Acknowledgment</h2>'+
+  '<p>By signing this Agreement, I acknowledge that: (a) I have read and fully understand this Agreement; (b) this Agreement was available to me for my review for '+dn+' days; (c) I had the opportunity to consult with legal counsel regarding this Agreement and my rights upon execution; (d) I have signed this Agreement knowingly and voluntarily and without any duress or undue influence on the part or behalf of the Employer, and (e) this Agreement shall not become effective or enforceable for a period of seven (7) days following its execution.</p>'+
+  '<table class="sig"><tr><td class="sl"></td><td class="gap"></td><td class="sd"></td></tr><tr><td>Employee\'s Signature'+(wdV(t,'toName')?' — '+esc(wdV(t,'toName')):'')+'</td><td></td><td>Date</td></tr>'+
+  '<tr class="sp"><td colspan="3">Lincoln Technical Institute, Inc., and/or its subsidiaries</td></tr><tr><td class="sl"></td><td class="gap"></td><td class="sd"></td></tr><tr><td>SVP, Chief Human Resources Officer</td><td></td><td>Date</td></tr></table>';
+}
+const WD_PRINT_CSS='@page{size:letter;margin:0.9in 1in}body{font-family:"Times New Roman",Times,serif;font-size:11.5pt;line-height:1.38;color:#000;margin:0}'+
+  'h1{text-align:center;font-size:15pt;margin:0 0 16px;text-transform:uppercase;letter-spacing:.5px}h2{font-size:11.5pt;margin:14px 0 6px;text-decoration:underline}'+
+  'p{margin:0 0 9px;text-align:justify}p.ind{text-indent:.5in}p.num{text-indent:.5in}ul{margin:0 0 9px 0;padding-left:.55in}li{margin-bottom:3px}'+
+  'table.memo{border-collapse:collapse;margin-bottom:12px}table.memo td{padding:1px 14px 1px 0;vertical-align:top}table.memo td:first-child{font-weight:bold;width:52px}'+
+  'table.esp{border-collapse:collapse;width:100%;margin-bottom:12px}table.esp td{padding:2px 8px 2px 0;vertical-align:top}table.esp td:nth-child(odd){font-weight:bold;white-space:nowrap}'+
+  '.blank{display:inline-block;border-bottom:1px solid #000;height:1em}.todo{color:#B00;font-style:italic}'+
+  '.comments{margin:16px 0 10px}.comments .line{border-bottom:1px solid #000;height:22px}'+
+  'table.sig{width:100%;border-collapse:collapse;margin-top:24px;page-break-inside:avoid}table.sig td{padding:0;font-size:10.5pt}table.sig td.sl{border-bottom:1px solid #000;height:34px;width:62%}table.sig td.gap{width:8%}table.sig td.sd{border-bottom:1px solid #000;width:30%}table.sig tr.sp td{height:26px;padding-top:14px}'+
+  '.draft{position:fixed;top:40%;left:0;right:0;text-align:center;font:bold 110pt Arial,sans-serif;color:rgba(200,0,0,.12);transform:rotate(-28deg);pointer-events:none;z-index:9}';
+
+/* ================= Workday: HR task tracker =================
+   Tasks live in tasks.json in a PRIVATE GitHub repository (default cmcdatasolutions/workday-tasks).
+   Admins and users with the Workday permission get a write key inside their encrypted sign-in, so status
+   changes and comments save immediately for everyone. Admins see and assign every task; other Workday
+   users see only the tasks assigned to them. */
+const WD_STATUSES=['Not started','Pending','Complete'];
+const WD_SCOL={'Not started':'#8E99AB','Pending':'#E3A008','Complete':'#2E9E5B'};
+let WD={repo:null,staff:[],tasks:[],sha:null,loaded:false,loading:false,err:'',filt:{st:'',who:'',type:'',q:''},edit:null,timer:null,lastLoad:null};
+function wdCanSee(profile){ return !!profile&&(profile.role==='admin'||!!(profile.perms&&profile.perms.wd)); }
+const wdIsAdmin=()=>!!(SESSION&&SESSION.profile.role==='admin');
+const wdMe=()=>SESSION?SESSION.profile.email:'';
+function wdStaffList(){   // who can be assigned: admins + Workday users
+  if(ADMIN) return ADMIN.users.filter(u=>u.role==='admin'||(u.perms&&u.perms.wd)).map(u=>({email:u.email,name:u.name||''})).sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email));
+  return WD.staff||[];
+}
+const wdName=e=>{ const s=wdStaffList().find(x=>x.email===e); return s?(s.name||s.email):(e||'—'); };
+
+/* ---- GitHub storage (tasks.json, optimistic concurrency with retry) ---- */
+const b64uEnc=s=>{ const b=new TextEncoder().encode(s); let o=''; for(let i=0;i<b.length;i+=0x8000) o+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000)); return btoa(o); };
+const b64uDec=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0)));
+function wdApi(path,opt){ const R=WD.repo; return fetch('https://api.github.com/repos/'+encodeURIComponent(R.owner)+'/'+encodeURIComponent(R.repo)+path,
+  {...(opt||{}),cache:'no-store',headers:{Authorization:'Bearer '+R.token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...((opt&&opt.headers)||{})}}); }
+async function wdFetch(){
+  const r=await wdApi('/contents/tasks.json?ref='+encodeURIComponent(WD.repo.branch||'main'));
+  if(r.status===404) return {tasks:[],sha:null};
+  if(r.status===401||r.status===403) throw new Error('The Workday key has expired or cannot reach '+WD.repo.owner+'/'+WD.repo.repo+' (GitHub '+r.status+'). An admin can update it in Admin → Data.');
+  if(!r.ok) throw new Error('GitHub error '+r.status+' while loading tasks.');
+  const j=await r.json(); let txt=j.content?b64uDec(j.content):'';
+  if(!txt&&j.sha){ const b=await wdApi('/git/blobs/'+j.sha); if(!b.ok) throw new Error('GitHub error '+b.status); txt=b64uDec((await b.json()).content); }
+  const d=txt?JSON.parse(txt):{tasks:[]}; return {tasks:Array.isArray(d.tasks)?d.tasks:[],sha:j.sha};
+}
+async function wdLoad(quiet){
+  if(!WD.repo||!WD.repo.token){ WD.err='not-connected'; wdRender(); return; }
+  if(WD.loading) return; WD.loading=true; if(!quiet) wdStatus('Loading tasks…');
+  try{ const {tasks,sha}=await wdFetch(); WD.tasks=tasks; WD.sha=sha; WD.loaded=true; WD.err=''; WD.lastLoad=new Date(); }
+  catch(e){ WD.err=e.message; }
+  finally{ WD.loading=false; wdRender(); }
+}
+/* apply(tasks) changes the list in place; re-run on the newest copy if someone else saved first */
+async function wdSave(apply,what){
+  for(let tryNo=0;tryNo<5;tryNo++){
+    const {tasks,sha}=tryNo===0&&WD.loaded?{tasks:JSON.parse(JSON.stringify(WD.tasks)),sha:WD.sha}:await wdFetch();
+    apply(tasks);
+    const body={message:(what||'Update tasks')+' ('+wdMe()+')',content:b64uEnc(JSON.stringify({version:1,updated:new Date().toISOString(),tasks},null,1)),branch:WD.repo.branch||'main'};
+    if(sha) body.sha=sha;
+    const r=await wdApi('/contents/tasks.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(r.ok){ const j=await r.json(); WD.tasks=tasks; WD.sha=j.content&&j.content.sha; WD.loaded=true; WD.lastLoad=new Date(); return true; }
+    if(r.status===409||r.status===422){ await new Promise(res=>setTimeout(res,300+Math.random()*500)); continue; }   // someone else saved: reload and re-apply
+    if(r.status===401||r.status===403||r.status===404) throw new Error('Could not save: the Workday key cannot write to '+WD.repo.owner+'/'+WD.repo.repo+' (GitHub '+r.status+'). It needs Contents: Read and write.');
+    throw new Error('GitHub error '+r.status+' while saving.');
+  }
+  throw new Error('Could not save because the task list kept changing. Please try again.');
+}
+
+/* ---- helpers ---- */
+const wdNow=()=>new Date().toISOString();
+const wdToday=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const wdWhen=v=>v?new Date(v).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}):'';
+const wdDay=v=>v?new Date(v).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+function wdDur(ms){ if(!(ms>=0)) return ''; const m=Math.round(ms/6e4); if(m<60) return m+' min'; const h=Math.floor(m/60); if(h<24) return h+' h '+(m%60?m%60+' m':''); const d=Math.floor(h/24); return d+' d'+(h%24?' '+h%24+' h':''); }
+const wdTaken=t=>t.completedAt&&t.assignedAt?wdDur(new Date(t.completedAt)-new Date(t.assignedAt)):'';
+const wdOpenFor=t=>!t.completedAt&&t.assignedAt?wdDur(Date.now()-new Date(t.assignedAt)):'';
+function wdMine(){ return wdIsAdmin()?WD.tasks:WD.tasks.filter(t=>t.assignee===wdMe()); }
+
+/* ---- main view ---- */
+function wdStatus(msg){ const el=document.getElementById('wdNote'); if(el) el.textContent=msg||''; }
+function wdRender(){
+  const V=document.getElementById('wdView'); if(!V||V.style.display==='none') return;
+  const admin=wdIsAdmin();
+  $('#wdNew').style.display=admin?'':'none'; $('#wdWhoWrap').style.display=admin?'':'none';
+  const body=$('#wdBody');
+  if(WD.err==='not-connected'){
+    body.innerHTML='<div class="wdempty"><b>The Workday task list is not connected yet.</b><br>'+(admin?'Go to <b>Admin → Data → Workday repository</b>, paste the key for the private <b>workday-tasks</b> repository, then click Publish.':'Ask an admin to connect it.')+'</div>';
+    wdCounts([]); wdStatus(''); return;
+  }
+  if(WD.err){ body.innerHTML='<div class="wdempty bad">'+esc(WD.err)+'</div>'; wdCounts([]); wdStatus(''); return; }
+  if(!WD.loaded){ body.innerHTML='<div class="wdempty">Loading tasks…</div>'; return; }
+  const all=wdMine(); wdCounts(all);
+  // assigned-to filter options
+  const who=$('#wdWho'); const cur=WD.filt.who;
+  who.innerHTML='<option value="">Everyone</option>'+wdStaffList().map(s=>'<option value="'+esc(s.email)+'">'+esc(s.name||s.email)+'</option>').join('')+'<option value="__none">Not assigned</option>';
+  who.value=cur;
+  const f=WD.filt, q=f.q.trim().toLowerCase();
+  const rows=all.filter(t=>(!f.st||t.status===f.st)&&(!f.type||t.type===f.type)&&(!f.who||(f.who==='__none'?!t.assignee:t.assignee===f.who))&&
+    (!q||[t.emp&&t.emp.name,WD_TEMPLATES[t.type]&&WD_TEMPLATES[t.type].name,wdName(t.assignee),t.emp&&t.emp.loc].join(' ').toLowerCase().includes(q)))
+    .sort((a,b)=>(WD_STATUSES.indexOf(a.status)===2)-(WD_STATUSES.indexOf(b.status)===2)||String(b.assignedAt||b.createdAt).localeCompare(String(a.assignedAt||a.createdAt)));
+  body.innerHTML=rows.length?'<table class="wdtbl"><thead><tr><th>Employee</th><th>Document</th><th class="c">Loc</th><th>Assigned to</th><th>Assigned</th><th class="c">Status</th><th>Completed</th><th>Time taken</th><th class="c" title="Comments">💬</th><th></th></tr></thead><tbody>'+
+    rows.map(t=>'<tr data-id="'+esc(t.id)+'"><td><b>'+esc(t.emp&&t.emp.name||'')+'</b><div class="sub">'+esc(t.emp&&t.emp.title||'')+'</div></td><td>'+esc(WD_TEMPLATES[t.type]?WD_TEMPLATES[t.type].name:t.type)+'</td><td class="c">'+esc(t.emp&&t.emp.loc!=null?t.emp.loc:'')+'</td>'+
+      '<td>'+(t.assignee?esc(wdName(t.assignee)):'<span class="sub">Not assigned</span>')+'</td><td>'+wdDay(t.assignedAt)+'</td>'+
+      '<td class="c"><span class="wdpill" style="color:'+WD_SCOL[t.status]+';background:'+WD_SCOL[t.status]+'1F">'+esc(t.status)+'</span></td>'+
+      '<td>'+wdDay(t.completedAt)+'</td><td>'+(t.completedAt?esc(wdTaken(t)):'<span class="sub">open '+esc(wdOpenFor(t))+'</span>')+'</td>'+
+      '<td class="c">'+((t.comments||[]).length||'')+'</td><td class="c"><button class="wdopen">Open</button></td></tr>').join('')+'</tbody></table>'
+    :'<div class="wdempty">'+(all.length?'No tasks match these filters.':admin?'No tasks yet. Click <b>+ New document</b> to create one and assign it.':'Nothing is assigned to you right now.')+'</div>';
+  body.querySelectorAll('tr[data-id]').forEach(tr=>tr.onclick=()=>wdOpen(tr.dataset.id));
+  wdStatus(WD.lastLoad?'Updated '+WD.lastLoad.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'');
+}
+function wdCounts(all){
+  const n=s=>all.filter(t=>t.status===s).length, done=all.filter(t=>t.completedAt&&t.assignedAt);
+  const avg=done.length?done.reduce((a,t)=>a+(new Date(t.completedAt)-new Date(t.assignedAt)),0)/done.length:NaN;
+  $('#wdStats').innerHTML=[['Not started',n('Not started'),WD_SCOL['Not started']],['Pending',n('Pending'),WD_SCOL['Pending']],['Complete',n('Complete'),WD_SCOL['Complete']]]
+    .map(([l,v,c])=>'<button class="wdstat'+(WD.filt.st===l?' on':'')+'" data-st="'+l+'" style="--c:'+c+'"><b>'+v+'</b><span>'+l+'</span></button>').join('')+
+    '<div class="wdstat avg"><b>'+(isFinite(avg)?wdDur(avg):'—')+'</b><span>Average time to complete</span></div>';
+  $('#wdStats').querySelectorAll('button[data-st]').forEach(b=>b.onclick=()=>{ WD.filt.st=WD.filt.st===b.dataset.st?'':b.dataset.st; wdRender(); });
+}
+function wdShow(on){
+  const V=document.getElementById('wdView'); V.style.display=on?'flex':'none';
+  if(on){ WD.repo=wdRepoFor(); WD.staff=SESSION&&SESSION.wd?SESSION.wd.staff||[]:[];
+    $('#wdType').innerHTML='<option value="">All documents</option>'+WD_TYPE_ORDER.map(k=>'<option value="'+k+'">'+WD_TEMPLATES[k].name+'</option>').join('');
+    $('#wdType').value=WD.filt.type;
+    wdRender(); wdLoad(WD.loaded);
+    clearInterval(WD.timer); WD.timer=setInterval(()=>{ if(!WD.edit&&document.visibilityState==='visible') wdLoad(true); },60000);
+  } else clearInterval(WD.timer);
+}
+function wdRepoFor(){ return ADMIN?ADMIN.wdRepo||null:(SESSION&&SESSION.wd&&SESSION.wd.repo)||null; }
+$('#wdRefresh').onclick=()=>wdLoad();
+$('#wdQ').oninput=e=>{ WD.filt.q=e.target.value; wdRender(); };
+$('#wdWho').onchange=e=>{ WD.filt.who=e.target.value; wdRender(); };
+$('#wdType').onchange=e=>{ WD.filt.type=e.target.value; wdRender(); };
+
+/* ---- new task (admin) ---- */
+function wdPeople(){   // employees from the training data, with manager from the lookup
+  const list=typeof bulkPeople==='function'&&ADMIN?bulkPeople():[];
+  const P=ADMIN&&ADMIN.people, ix=new Map(); if(P) P.n.forEach((n,i)=>ix.set(n,i));
+  return list.map(p=>{ const name=(p.first+' '+p.last).trim(), i=ix.get(name.toLowerCase());
+    return {name,title:p.job||'',loc:p.loc>=0?p.loc:'',emp:p.emp,mgr:i!==undefined?P.mgr[i]:''}; });
+}
+$('#wdNew').onclick=()=>{
+  if(!WD.repo||!WD.repo.token){ alert('Connect the Workday repository first: Admin → Data → Workday repository.'); return; }
+  const people=wdPeople(); WD.newPeople=people;
+  $('#wnType').innerHTML=WD_TYPE_ORDER.map(k=>'<option value="'+k+'">'+WD_TEMPLATES[k].name+'</option>').join('');
+  $('#wnEmpList').innerHTML=people.map((p,i)=>'<option value="'+esc(p.name+(p.loc!==''?' — Loc '+p.loc:'')+(p.title?' — '+p.title:''))+'">').join('');
+  $('#wnEmp').value=''; $('#wnMsg').textContent='';
+  $('#wnWho').innerHTML='<option value="">Assign later</option>'+wdStaffList().map(s=>'<option value="'+esc(s.email)+'">'+esc(s.name||s.email)+'</option>').join('');
+  $('#wnDue').value='';
+  $('#wdNewForm').style.display='flex'; $('#wnEmp').focus();
+};
+$('#wnCancel').onclick=()=>{ $('#wdNewForm').style.display='none'; };
+$('#wnSave').onclick=async()=>{
+  const v=$('#wnEmp').value.trim(), msg=$('#wnMsg'); msg.className='msg';
+  if(!v){ msg.className='msg bad'; msg.textContent='Choose or type the employee\'s name.'; return; }
+  const name=v.split(' — ')[0].trim(), p=(WD.newPeople||[]).find(x=>x.name.toLowerCase()===name.toLowerCase())||{name,title:'',loc:'',mgr:''};
+  const type=$('#wnType').value, who=$('#wnWho').value, me=wdMe(), now=wdNow();
+  const f={}; for(const fd of WD_TEMPLATES[type].fields) if(fd.def!==undefined) f[fd.k]=fd.def;
+  Object.assign(f,{date:wdToday(),toName:p.name,toTitle:p.title,fromName:p.mgr||'',location:p.loc!==''?String(p.loc):''});
+  if(type==='esp'){ f.start=wdToday(); const e=new Date(); e.setDate(e.getDate()+30); f.end=e.toISOString().slice(0,10); }
+  const t={id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),type,emp:{name:p.name,title:p.title,loc:p.loc,emp:p.emp??null,mgr:p.mgr||''},f,
+    status:'Not started',assignee:who||'',assignedAt:who?now:null,assignedBy:who?me:'',due:$('#wnDue').value||'',startedAt:null,completedAt:null,
+    comments:[],log:[{by:me,at:now,what:'Created'+(who?' and assigned to '+wdName(who):'')}],createdAt:now,createdBy:me,updatedAt:now,updatedBy:me};
+  const btn=$('#wnSave'); btn.disabled=true; btn.textContent='Saving…';
+  try{ await wdSave(L=>L.push(t),'New '+WD_TEMPLATES[type].name+' for '+p.name); $('#wdNewForm').style.display='none'; wdRender(); wdOpen(t.id); }
+  catch(e){ msg.className='msg bad'; msg.textContent=e.message; }
+  finally{ btn.disabled=false; btn.textContent='Create'; }
+};
+
+/* ---- task editor ---- */
+function wdOpen(id){
+  const t=WD.tasks.find(x=>x.id===id); if(!t) return;
+  const admin=wdIsAdmin(), mine=t.assignee===wdMe(), canEdit=admin||mine;
+  WD.edit={id,f:{...t.f},status:t.status,assignee:t.assignee||'',due:t.due||'',assignedAt:t.assignedAt,dirty:false};
+  const T=WD_TEMPLATES[t.type];
+  $('#weTitle').textContent=(T?T.name:t.type)+' — '+(t.emp&&t.emp.name||'');
+  // left: task panel
+  $('#weWho').innerHTML='<option value="">Not assigned</option>'+wdStaffList().map(s=>'<option value="'+esc(s.email)+'">'+esc(s.name||s.email)+'</option>').join('');
+  $('#weWho').value=t.assignee||''; $('#weWho').disabled=!admin;
+  $('#weDue').value=t.due||''; $('#weDue').disabled=!admin;
+  $('#weStatus').innerHTML=WD_STATUSES.map(s=>'<option'+(s===t.status?' selected':'')+'>'+s+'</option>').join(''); $('#weStatus').disabled=!canEdit;
+  $('#weDel').style.display=admin?'':'none';
+  wdTimes(t);
+  wdComments(t);
+  $('#weCText').value=''; $('#weCAdd').disabled=!canEdit; $('#weCText').disabled=!canEdit;
+  // right: template form
+  const form=$('#weForm');
+  form.innerHTML=(T?T.fields:[]).map(fd=>{
+    const v=WD.edit.f[fd.k]??fd.def??'', id='wf_'+fd.k, dis=canEdit?'':' disabled';
+    let inp;
+    if(fd.type==='textarea') inp='<textarea id="'+id+'" rows="'+(fd.rows||4)+'"'+dis+'>'+esc(v)+'</textarea>';
+    else if(fd.type==='select') inp='<select id="'+id+'"'+dis+'>'+fd.opts.map(o=>'<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select>';
+    else inp='<input id="'+id+'" type="'+(fd.type==='date'?'date':fd.type==='number'?'number':'text')+'" value="'+esc(v)+'"'+dis+'>';
+    return '<label class="'+(fd.wide?'wide':'')+'"><span>'+esc(fd.label)+'</span>'+inp+(fd.hint?'<em>'+esc(fd.hint)+'</em>':'')+
+      (fd.presets&&canEdit?'<div class="wdchips">'+WD_POLICIES.map(p=>'<button type="button" data-p="'+p.k+'" title="'+esc(p.text)+'">+ '+esc(p.label)+'</button>').join('')+'</div>':'')+'</label>';
+  }).join('');
+  form.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>{ WD.edit.f[el.id.slice(3)]=el.value; WD.edit.dirty=true; wdDirty(); }));
+  form.querySelectorAll('.wdchips button').forEach(b=>b.onclick=()=>{ const p=WD_POLICIES.find(x=>x.k===b.dataset.p), ta=$('#wf_policies');
+    ta.value=(ta.value.trim()?ta.value.replace(/\s+$/,'')+'\n':'')+'- '+p.text; WD.edit.f.policies=ta.value; WD.edit.dirty=true; wdDirty(); });
+  $('#weSave').style.display=canEdit?'':'none';
+  $('#weRO').style.display=canEdit?'none':'';
+  wdDirty();
+  $('#wdEditor').style.display='flex';
+}
+function wdTimes(t){
+  $('#weTimes').innerHTML=
+    '<div><span>Assigned</span><b>'+(t.assignedAt?wdWhen(t.assignedAt):'—')+'</b></div>'+
+    '<div><span>Started (Pending)</span><b>'+(t.startedAt?wdWhen(t.startedAt):'—')+'</b></div>'+
+    '<div><span>Completed</span><b>'+(t.completedAt?wdWhen(t.completedAt):'—')+'</b></div>'+
+    '<div><span>Time taken</span><b>'+(t.completedAt?wdTaken(t):(t.assignedAt?'open '+wdOpenFor(t):'—'))+'</b></div>'+
+    (t.due?'<div><span>Due</span><b'+(!t.completedAt&&t.due<wdToday()?' class="late"':'')+'>'+wdDay(t.due+'T12:00:00')+'</b></div>':'');
+}
+function wdComments(t){
+  const C=t.comments||[];
+  $('#weComments').innerHTML=C.length?C.map(c=>'<div class="wdc"><div><b>'+esc(c.name||c.by)+'</b><span>'+wdWhen(c.at)+'</span></div><p>'+esc(c.text).replace(/\n/g,'<br>')+'</p></div>').join('')
+    :'<div class="sub" style="padding:6px 2px">No comments yet.</div>';
+  const L=(t.log||[]).slice(-8).reverse();
+  $('#weLog').innerHTML=L.map(l=>'<div>'+wdWhen(l.at)+' · '+esc(wdName(l.by))+': '+esc(l.what)+'</div>').join('');
+}
+function wdDirty(){ const e=WD.edit; if(!e) return; const t=WD.tasks.find(x=>x.id===e.id);
+  const ch=e.dirty||$('#weStatus').value!==t.status||$('#weWho').value!==(t.assignee||'')||$('#weDue').value!==(t.due||'');
+  $('#weSave').disabled=!ch; $('#weSave').textContent=ch?'Save changes':'Saved'; }
+['#weStatus','#weWho','#weDue'].forEach(s=>$(s).addEventListener('change',wdDirty));
+function wdClose(){ if(WD.edit&&!$('#weSave').disabled&&$('#weSave').style.display!=='none'&&!confirm('Close without saving your changes?')) return; $('#wdEditor').style.display='none'; WD.edit=null; wdRender(); }
+$('#weClose').onclick=wdClose;
+function wdApplyEdit(L,me,now){
+  const e=WD.edit, t=L.find(x=>x.id===e.id); if(!t) throw new Error('This task was deleted by someone else.');
+  const st=$('#weStatus').value, who=$('#weWho').value, due=$('#weDue').value;
+  if(e.dirty){ t.f={...t.f,...e.f}; t.log=(t.log||[]).concat({by:me,at:now,what:'Edited the document'}); }
+  if(who!==(t.assignee||'')&&wdIsAdmin()){ t.assignee=who; t.assignedAt=who?now:null; t.assignedBy=who?me:''; t.log=(t.log||[]).concat({by:me,at:now,what:who?'Assigned to '+wdName(who):'Unassigned'}); }
+  if(due!==(t.due||'')&&wdIsAdmin()){ t.due=due; t.log=(t.log||[]).concat({by:me,at:now,what:due?'Due date set to '+due:'Due date removed'}); }
+  if(st!==t.status){
+    t.log=(t.log||[]).concat({by:me,at:now,what:'Status: '+t.status+' → '+st});
+    if(st==='Pending'&&!t.startedAt) t.startedAt=now;
+    if(st==='Complete'){ t.completedAt=now; if(!t.startedAt) t.startedAt=now; }
+    if(st!=='Complete') t.completedAt=null;
+    if(st==='Not started') t.startedAt=null;
+    t.status=st;
+  }
+  t.updatedAt=now; t.updatedBy=me;
+}
+$('#weSave').onclick=async()=>{
+  const e=WD.edit, btn=$('#weSave'), me=wdMe(), now=wdNow();
+  if($('#weStatus').value==='Complete'&&!confirm('Mark this document Complete? The time taken will be recorded now.')) return;
+  btn.disabled=true; btn.textContent='Saving…';
+  try{ await wdSave(L=>wdApplyEdit(L,me,now),'Update task '+e.id); const t=WD.tasks.find(x=>x.id===e.id); e.dirty=false; wdTimes(t); wdComments(t); wdDirty(); toast('Saved.'); }
+  catch(err){ alert(err.message); wdDirty(); }
+};
+$('#weCAdd').onclick=async()=>{
+  const txt=$('#weCText').value.trim(); if(!txt) return;
+  const e=WD.edit, me=wdMe(), now=wdNow(), name=SESSION.profile.name||me, btn=$('#weCAdd'); btn.disabled=true;
+  try{ await wdSave(L=>{ const t=L.find(x=>x.id===e.id); if(!t) throw new Error('This task was deleted.'); t.comments=(t.comments||[]).concat({by:me,name,at:now,text:txt}); t.updatedAt=now; t.updatedBy=me; },'Comment on '+e.id);
+    $('#weCText').value=''; wdComments(WD.tasks.find(x=>x.id===e.id)); }
+  catch(err){ alert(err.message); } finally{ btn.disabled=false; }
+};
+$('#weDel').onclick=async()=>{
+  const e=WD.edit; if(!confirm('Delete this task and its document draft? This cannot be undone.')) return;
+  try{ await wdSave(L=>{ const i=L.findIndex(x=>x.id===e.id); if(i>=0) L.splice(i,1); },'Delete task '+e.id); $('#wdEditor').style.display='none'; WD.edit=null; wdRender(); }
+  catch(err){ alert(err.message); }
+};
+/* ---- print ---- */
+$('#wePrint').onclick=()=>{
+  const e=WD.edit, t0=WD.tasks.find(x=>x.id===e.id); if(!t0) return;
+  const t={...t0,f:{...t0.f,...e.f}}, T=WD_TEMPLATES[t.type];
+  const done=t0.status==='Complete'&&!e.dirty;
+  if(!done&&!confirm('This document is not marked Complete'+(e.dirty?' (or has unsaved changes)':'')+'. Print it as a DRAFT?')) return;
+  const w=window.open('','_blank'); if(!w){ alert('Allow pop-ups for this site to print.'); return; }
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(T.name+' - '+(t.emp&&t.emp.name||''))+'</title><style>'+WD_PRINT_CSS+'</style></head><body>'+(done?'':'<div class="draft">DRAFT</div>')+T.render(t)+'</body></html>');
+  w.document.close(); w.focus(); setTimeout(()=>w.print(),300);
+};
+
 /* ---------------- Admin: Weekly Corrective Actions report ---------------- */
 const WK_TYPES=['Verbal Warning','Written Warning','Final Warning','Letter Of Concern','Separation Agreement','Employee Success Plan'];
 const WK_WARN=new Set(['Verbal Warning','Written Warning','Final Warning']);
@@ -2045,9 +2580,10 @@ async function publish(cfg){
     const payload={profile:{email:u.email,name:u.name||'',role:u.role,perms:u.perms},updated:ADMIN.updated,source:ADMIN.source,
                    programs:PROGRAMS,
                    data:u.role==='admin'?ADMIN.raw:(u.perms&&u.perms.td===false?emptyRaw():subsetRaw(ADMIN.raw,u.perms))};
-    if(u.role==='admin'){ payload.users=ADMIN.users; payload.groups=ADMIN.groups||[]; payload.caDocs=ADMIN.caDocs; payload.people=ADMIN.people; payload.caUpdated=ADMIN.caUpdated; payload.docRepo=ADMIN.docRepo||null; payload.mail=ADMIN.mail||null; payload.caSource=ADMIN.caSource||null; }
+    if(u.role==='admin'){ payload.users=ADMIN.users; payload.groups=ADMIN.groups||[]; payload.caDocs=ADMIN.caDocs; payload.people=ADMIN.people; payload.caUpdated=ADMIN.caUpdated; payload.docRepo=ADMIN.docRepo||null; payload.mail=ADMIN.mail||null; payload.caSource=ADMIN.caSource||null; payload.wdRepo=ADMIN.wdRepo||null; }
     else if(u.perms&&u.perms.ca){ payload.ca={rows:caSubset(caDerive(ADMIN.caDocs,ADMIN.people),u.perms),files:caFiles(ADMIN.caDocs,ADMIN.people,u.perms),updated:ADMIN.caUpdated,repo:ADMIN.docRepo||null,
                                    people:peopleSubset(ADMIN.people,u.perms),generated:(ADMIN.caSource&&ADMIN.caSource.generated)||null}; }
+    if(u.role!=='admin'&&u.perms&&u.perms.wd) payload.wd={repo:ADMIN.wdRepo||null,staff:wdStaffList()};
     files['data/u/'+h+'.json']=await encryptBundle(payload,b64d(u.key),u.salt);
     plog('  ✓ '+u.email+' ('+nf.format(payload.data.empNo.length)+' rows'+(u.role==='admin'||payload.ca?' + Corrective Actions':'')+')');
   }
@@ -2576,6 +3112,7 @@ function dashOptions(){
   const opts=[], P=SESSION&&SESSION.profile;
   if(!P||tdCanSee(P)) opts.push({v:'td',name:'Training & Development'});
   if(P&&caCanSee(P)) opts.push({v:'ca',name:'Corrective Actions'});
+  if(P&&wdCanSee(P)) opts.push({v:'wd',name:'Workday'});
   if(!P||go1CanSee(P)) opts.push({v:'url:'+GO1_URL,name:'Go1 Training'});
   return opts;
 }
@@ -2585,10 +3122,12 @@ function renderDashSelects(){
 }
 function showView(v){
   if(v==='ca'&&!(SESSION&&caCanSee(SESSION.profile))) v='td';
-  if(v==='td'&&SESSION&&!tdCanSee(SESSION.profile)){ if(caCanSee(SESSION.profile)) v='ca'; else { location.replace(GO1_URL); return; } }
+  if(v==='wd'&&!(SESSION&&wdCanSee(SESSION.profile))) v='td';
+  if(v==='td'&&SESSION&&!tdCanSee(SESSION.profile)){ if(caCanSee(SESSION.profile)) v='ca'; else if(wdCanSee(SESSION.profile)) v='wd'; else { location.replace(GO1_URL); return; } }
   VIEW=v; closePops(); hideTip();
-  document.querySelector('#toolbar .ttl').textContent=v==='ca'?'Corrective Action Dashboard':'Training & Development Dashboard';
-  C.style.display=v==='td'?'':'none'; CC.style.display=v==='ca'?'':'none';
+  document.querySelector('#toolbar .ttl').textContent=v==='ca'?'Corrective Action Dashboard':v==='wd'?'Workday':'Training & Development Dashboard';
+  C.style.display=v==='td'?'':'none'; CC.style.display=v==='ca'?'':'none'; wdShow(v==='wd');
+  for(const id of ['btnDefault','btnClear']) document.getElementById(id).style.display=v==='wd'?'none':'';
   renderDashSelects(); fit(); renderMeta();
   if(v==='ca') caUpdate();
   try{sessionStorage.setItem('td_view',v);}catch(e){}
@@ -2610,7 +3149,7 @@ function caInit(payload){
   caSetRows(rows||{e:[],l:[],m:[],j:[],jc:[],id:[],a:[],t:[],d:[],p:[]},upd); caDefaults(); CA_TOUCHED=false;
   if(caCanSee(payload.profile)) caAutoRefresh(payload);
   let v='td'; try{v=sessionStorage.getItem('td_view')||'td';}catch(e){}
-  try{ const q=new URLSearchParams(location.search).get('view'); if(q==='ca'||q==='td') v=q; }catch(e){}
+  try{ const q=new URLSearchParams(location.search).get('view'); if(q==='ca'||q==='td'||q==='wd') v=q; }catch(e){}
   showView(v);
 }
 function caRecompute(){ if(!ADMIN) return; const keepView=VIEW; CA.files=caFiles(ADMIN.caDocs,ADMIN.people,null); CA.repo=ADMIN.docRepo; caSetRows(caDerive(ADMIN.caDocs,ADMIN.people),ADMIN.caUpdated); caDefaults(); if(keepView==='ca') caUpdate(); }
@@ -2969,8 +3508,28 @@ $('#rSave').onclick=async()=>{
 };
 $('#rClear').onclick=()=>{ if(!confirm('Disconnect the documents repository? Users will no longer be able to open documents after you publish.')) return; ADMIN.docRepo=null; CA.repo=null; markDirty(); renderDocRepo(); $('#rMsg').textContent=''; };
 
+/* Admin: Workday repository settings */
+function renderWdRepo(){
+  const r=ADMIN.wdRepo||{owner:'cmcdatasolutions',repo:'workday-tasks',branch:'main',token:''};
+  $('#wOwner').value=r.owner; $('#wRepo').value=r.repo; $('#wBranch').value=r.branch||'main'; $('#wToken').value=r.token||'';
+  $('#wState').innerHTML=ADMIN.wdRepo&&ADMIN.wdRepo.token?'<span class="all">Connected</span> — Workday tasks are saved in '+esc(r.owner+'/'+r.repo)+'.':'<span style="color:#C4521F;font-weight:700">Not connected</span>';
+}
+$('#wSave').onclick=async()=>{
+  const r={owner:$('#wOwner').value.trim(),repo:$('#wRepo').value.trim(),branch:$('#wBranch').value.trim()||'main',token:$('#wToken').value.trim()};
+  const m=$('#wMsg'); m.className='msg'; m.textContent='Checking…';
+  if(!r.token){ m.className='msg bad'; m.textContent='Paste the write key first.'; return; }
+  if(ADMIN.docRepo&&ADMIN.docRepo.token===r.token){ m.className='msg bad'; m.textContent='This is the documents read-only key. Workday needs its own key with Read and write access to '+r.repo+'.'; return; }
+  try{
+    const res=await fetch('https://api.github.com/repos/'+encodeURIComponent(r.owner)+'/'+encodeURIComponent(r.repo),{headers:{Authorization:'Bearer '+r.token,Accept:'application/vnd.github+json'},cache:'no-store'});
+    if(!res.ok) throw new Error(res.status===404||res.status===401||res.status===403?'The key cannot reach '+r.owner+'/'+r.repo+'. Check the repository name and that the key has Contents: Read and write on it.':'GitHub error '+res.status);
+    const j=await res.json(); if(!j.private) throw new Error(r.owner+'/'+r.repo+' is PUBLIC. Workday tasks contain confidential HR information; make the repository private first.');
+    ADMIN.wdRepo=r; WD.repo=r; WD.loaded=false; markDirty(); renderWdRepo(); m.className='msg ok'; m.textContent='Connected. Click Publish so Workday users get it.';
+  }catch(err){ m.className='msg bad'; m.textContent=err.message; }
+};
+$('#wClear').onclick=()=>{ if(!confirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
+
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-12.6';
+const APP_VERSION='2026-11-14.1';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
