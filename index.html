@@ -396,6 +396,13 @@
   .wdtimes{display:grid;gap:4px;font-size:12px;background:#fff;border:1px solid #DCE3EE;border-radius:8px;padding:8px 10px}
   .wdtimes div{display:flex;justify-content:space-between;gap:8px}.wdtimes span{color:#5A6478}.wdtimes b{color:#14284B;text-align:right}.wdtimes b.late{color:#C0392B}
   .wdcomments{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:240px;overflow:auto}
+  .wdch{display:flex;align-items:center}
+  .wdch button{margin-left:auto;font:inherit;font-size:11px;font-weight:700;letter-spacing:0;text-transform:none;padding:2px 8px;border:1px solid #1F4E8C;border-radius:10px;background:#fff;color:#1F4E8C;cursor:pointer}
+  .wdcard.cbig .wdgrid{grid-template-columns:min(560px,48%) 1fr}
+  .wdcard.cbig .wdcomments{max-height:none}
+  .wdcard.cbig #weCText{min-height:140px}
+  #weCText{width:100%;box-sizing:border-box}
+  .wdcard.cbig .wdc{font-size:13.5px}
   .wdc{background:#fff;border:1px solid #DCE3EE;border-radius:8px;padding:6px 9px;font-size:12.5px}
   .wdc div{display:flex;justify-content:space-between;gap:6px}.wdc div span{font-size:11px;color:#5A6478}.wdc p{margin:3px 0 0;line-height:1.35}
   .wdsmall{font-size:12.5px !important;padding:6px 12px !important;margin-top:6px}
@@ -407,6 +414,8 @@
   .wdchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
   .wdchips button{font:inherit;font-size:11.5px;font-weight:700;padding:3px 9px;border:1px solid #1F4E8C;border-radius:12px;background:#EEF4FF;color:#1F4E8C;cursor:pointer}
   .wdchips button:hover{background:#1F4E8C;color:#fff}
+  #weWord{font:inherit;font-weight:700;padding:8px 14px;border:1px solid #2B579A;border-radius:6px;background:#2B579A;color:#fff;cursor:pointer;margin-right:8px}
+  #weWord:hover{background:#1E3F73}
   #wePrint{font:inherit;font-weight:700;padding:8px 14px;border:1px solid #14284B;border-radius:6px;background:#fff;color:#14284B;cursor:pointer}
   #userForm{position:fixed;inset:0;z-index:260000;background:rgba(11,18,32,.45);display:flex;align-items:center;justify-content:center}
   .fcard{width:min(1000px,94vw);max-height:92vh;background:#fff;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}
@@ -536,7 +545,7 @@
       <label>Due date<input id="weDue" type="date"></label>
       <label>Status<select id="weStatus"></select></label>
       <div id="weTimes" class="wdtimes"></div>
-      <h4>Comments</h4>
+      <h4 class="wdch">Comments <button type="button" id="weCExp" title="Make the comments area larger">⤢ Expand</button></h4>
       <div id="weComments" class="wdcomments"></div>
       <textarea id="weCText" rows="3" placeholder="Add a comment for the team…"></textarea>
       <button id="weCAdd" class="primary wdsmall">Add comment</button>
@@ -544,7 +553,7 @@
     </aside>
     <section class="wdmain"><div id="weRO" class="pnote" style="display:none;margin:0 0 8px">Only the assigned HR employee or an admin can edit this document.</div><div id="weForm" class="wdform"></div></section>
   </div>
-  <div class="ffoot"><button id="weDel" class="link" style="color:#C0392B;margin-right:auto">Delete task</button><button id="wePrint">🖨 Print</button><button id="weSave" class="primary">Save changes</button></div>
+  <div class="ffoot"><button id="weDel" class="link" style="color:#C0392B;margin-right:auto">Delete task</button><button id="weWord" title="Download this document as a Word file">📄 Word</button><button id="wePrint">🖨 Print</button><button id="weSave" class="primary">Save changes</button></div>
 </div></div>
 </div>
 <div id="tip"></div>
@@ -2158,11 +2167,22 @@ let WD={repo:null,staff:[],tasks:[],sha:null,loaded:false,loading:false,err:'',f
 function wdCanSee(profile){ return !!profile&&(profile.role==='admin'||!!(profile.perms&&profile.perms.wd)); }
 const wdIsAdmin=()=>!!(SESSION&&SESSION.profile.role==='admin');
 const wdMe=()=>SESSION?SESSION.profile.email:'';
-function wdStaffList(){   // who can be assigned: admins + Workday users
-  if(ADMIN) return ADMIN.users.filter(u=>u.role==='admin'||(u.perms&&u.perms.wd)).map(u=>({email:u.email,name:u.name||''})).sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email));
+function wdStaffList(all){   // who can be assigned: admins + Workday users (all=true: every dashboard user, for the admin's pick list)
+  if(ADMIN) return ADMIN.users.filter(u=>all||u.role==='admin'||(u.perms&&u.perms.wd)).map(u=>({email:u.email,name:u.name||'',wd:u.role==='admin'||!!(u.perms&&u.perms.wd)})).sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email));
   return WD.staff||[];
 }
-const wdName=e=>{ const s=wdStaffList().find(x=>x.email===e); return s?(s.name||s.email):(e||'—'); };
+const wdName=e=>{ const s=wdStaffList(true).find(x=>x.email===e); return s?(s.name||s.email):(e||'—'); };
+function wdWhoOptions(first){   // names (with email) — Workday users first, then everyone else who has an account
+  const L=wdStaffList(!!ADMIN), lab=s=>esc((s.name?s.name+' — ':'')+s.email);
+  const a=L.filter(s=>s.wd!==false), b=L.filter(s=>s.wd===false);
+  return '<option value="">'+first+'</option>'+(a.length?'<optgroup label="HR / Workday users">'+a.map(s=>'<option value="'+esc(s.email)+'">'+lab(s)+'</option>').join('')+'</optgroup>':'')+
+    (b.length?'<optgroup label="Other users (will be given Workday access)">'+b.map(s=>'<option value="'+esc(s.email)+'">'+lab(s)+'</option>').join('')+'</optgroup>':'');
+}
+function wdGrant(email){   // assigning someone without Workday access gives it to them (takes effect after Publish)
+  if(!ADMIN||!email) return false; const u=ADMIN.users.find(x=>x.email===email);
+  if(!u||u.role==='admin'||(u.perms&&u.perms.wd)) return false;
+  u.perms={...(u.perms||{}),wd:true}; markDirty(); return true;
+}
 
 /* ---- GitHub storage (tasks.json, optimistic concurrency with retry) ---- */
 const b64uEnc=s=>{ const b=new TextEncoder().encode(s); let o=''; for(let i=0;i<b.length;i+=0x8000) o+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000)); return btoa(o); };
@@ -2227,7 +2247,7 @@ function wdRender(){
   const all=wdMine(); wdCounts(all);
   // assigned-to filter options
   const who=$('#wdWho'); const cur=WD.filt.who;
-  who.innerHTML='<option value="">Everyone</option>'+wdStaffList().map(s=>'<option value="'+esc(s.email)+'">'+esc(s.name||s.email)+'</option>').join('')+'<option value="__none">Not assigned</option>';
+  who.innerHTML='<option value="">Everyone</option>'+wdStaffList(true).filter(s=>s.wd!==false||WD.tasks.some(t=>t.assignee===s.email)).map(s=>'<option value="'+esc(s.email)+'">'+esc(s.name||s.email)+'</option>').join('')+'<option value="__none">Not assigned</option>';
   who.value=cur;
   const f=WD.filt, q=f.q.trim().toLowerCase();
   const rows=all.filter(t=>(!f.st||t.status===f.st)&&(!f.type||t.type===f.type)&&(!f.who||(f.who==='__none'?!t.assignee:t.assignee===f.who))&&
@@ -2279,7 +2299,7 @@ $('#wdNew').onclick=()=>{
   $('#wnType').innerHTML=WD_TYPE_ORDER.map(k=>'<option value="'+k+'">'+WD_TEMPLATES[k].name+'</option>').join('');
   $('#wnEmpList').innerHTML=people.map((p,i)=>'<option value="'+esc(p.name+(p.loc!==''?' — Loc '+p.loc:'')+(p.title?' — '+p.title:''))+'">').join('');
   $('#wnEmp').value=''; $('#wnMsg').textContent='';
-  $('#wnWho').innerHTML='<option value="">Assign later</option>'+wdStaffList().map(s=>'<option value="'+esc(s.email)+'">'+esc(s.name||s.email)+'</option>').join('');
+  $('#wnWho').innerHTML=wdWhoOptions('Assign later');
   $('#wnDue').value='';
   $('#wdNewForm').style.display='flex'; $('#wnEmp').focus();
 };
@@ -2289,6 +2309,7 @@ $('#wnSave').onclick=async()=>{
   if(!v){ msg.className='msg bad'; msg.textContent='Choose or type the employee\'s name.'; return; }
   const name=v.split(' — ')[0].trim(), p=(WD.newPeople||[]).find(x=>x.name.toLowerCase()===name.toLowerCase())||{name,title:'',loc:'',mgr:''};
   const type=$('#wnType').value, who=$('#wnWho').value, me=wdMe(), now=wdNow();
+  const granted=wdGrant(who);
   const f={}; for(const fd of WD_TEMPLATES[type].fields) if(fd.def!==undefined) f[fd.k]=fd.def;
   Object.assign(f,{date:wdToday(),toName:p.name,toTitle:p.title,fromName:p.mgr||'',location:p.loc!==''?String(p.loc):''});
   if(type==='esp'){ f.start=wdToday(); const e=new Date(); e.setDate(e.getDate()+30); f.end=e.toISOString().slice(0,10); }
@@ -2296,7 +2317,8 @@ $('#wnSave').onclick=async()=>{
     status:'Not started',assignee:who||'',assignedAt:who?now:null,assignedBy:who?me:'',due:$('#wnDue').value||'',startedAt:null,completedAt:null,
     comments:[],log:[{by:me,at:now,what:'Created'+(who?' and assigned to '+wdName(who):'')}],createdAt:now,createdBy:me,updatedAt:now,updatedBy:me};
   const btn=$('#wnSave'); btn.disabled=true; btn.textContent='Saving…';
-  try{ await wdSave(L=>L.push(t),'New '+WD_TEMPLATES[type].name+' for '+p.name); $('#wdNewForm').style.display='none'; wdRender(); wdOpen(t.id); }
+  try{ await wdSave(L=>L.push(t),'New '+WD_TEMPLATES[type].name+' for '+p.name); $('#wdNewForm').style.display='none'; wdRender(); wdOpen(t.id);
+    if(granted) toast(wdName(who)+' now has Workday access. Click Publish so they can see this task.'); }
   catch(e){ msg.className='msg bad'; msg.textContent=e.message; }
   finally{ btn.disabled=false; btn.textContent='Create'; }
 };
@@ -2309,7 +2331,7 @@ function wdOpen(id){
   const T=WD_TEMPLATES[t.type];
   $('#weTitle').textContent=(T?T.name:t.type)+' — '+(t.emp&&t.emp.name||'');
   // left: task panel
-  $('#weWho').innerHTML='<option value="">Not assigned</option>'+wdStaffList().map(s=>'<option value="'+esc(s.email)+'">'+esc(s.name||s.email)+'</option>').join('');
+  $('#weWho').innerHTML=wdWhoOptions('Not assigned');
   $('#weWho').value=t.assignee||''; $('#weWho').disabled=!admin;
   $('#weDue').value=t.due||''; $('#weDue').disabled=!admin;
   $('#weStatus').innerHTML=WD_STATUSES.map(s=>'<option'+(s===t.status?' selected':'')+'>'+s+'</option>').join(''); $('#weStatus').disabled=!canEdit;
@@ -2334,6 +2356,7 @@ function wdOpen(id){
   $('#weSave').style.display=canEdit?'':'none';
   $('#weRO').style.display=canEdit?'none':'';
   wdDirty();
+  document.querySelector('#wdEditor .wdcard').classList.remove('cbig'); $('#weCExp').textContent='⤢ Expand';
   $('#wdEditor').style.display='flex';
 }
 function wdTimes(t){
@@ -2377,7 +2400,8 @@ $('#weSave').onclick=async()=>{
   const e=WD.edit, btn=$('#weSave'), me=wdMe(), now=wdNow();
   if($('#weStatus').value==='Complete'&&!confirm('Mark this document Complete? The time taken will be recorded now.')) return;
   btn.disabled=true; btn.textContent='Saving…';
-  try{ await wdSave(L=>wdApplyEdit(L,me,now),'Update task '+e.id); const t=WD.tasks.find(x=>x.id===e.id); e.dirty=false; wdTimes(t); wdComments(t); wdDirty(); toast('Saved.'); }
+  const granted=wdIsAdmin()&&wdGrant($('#weWho').value);
+  try{ await wdSave(L=>wdApplyEdit(L,me,now),'Update task '+e.id); if(granted) setTimeout(()=>toast(wdName($('#weWho').value)+' now has Workday access. Click Publish so they can see this task.'),1600); const t=WD.tasks.find(x=>x.id===e.id); e.dirty=false; wdTimes(t); wdComments(t); wdDirty(); toast('Saved.'); }
   catch(err){ alert(err.message); wdDirty(); }
 };
 $('#weCAdd').onclick=async()=>{
@@ -2391,6 +2415,33 @@ $('#weDel').onclick=async()=>{
   const e=WD.edit; if(!confirm('Delete this task and its document draft? This cannot be undone.')) return;
   try{ await wdSave(L=>{ const i=L.findIndex(x=>x.id===e.id); if(i>=0) L.splice(i,1); },'Delete task '+e.id); $('#wdEditor').style.display='none'; WD.edit=null; wdRender(); }
   catch(err){ alert(err.message); }
+};
+function wdWordify(h){   // Word ignores borders on empty cells/divs: use explicit widths and underscore lines instead
+  const U='_'.repeat(52), D='_'.repeat(20);
+  h=h.replace(/<table class="memo">/g,'<table class="memo" width="100%" style="width:100%">').replace(/<tr><td>([A-Za-z]+:)<\/td><td>/g,'<tr><td width="12%" style="width:12%;font-weight:bold">$1</td><td>');
+  h=h.replace(/<table class="esp">/g,'<table class="esp" width="100%" style="width:100%">');
+  h=h.replace(/<div class="line"><\/div>/g,'<p style="margin:0">'+'_'.repeat(86)+'</p>');
+  h=h.replace(/<table class="sig">([\s\S]*?)<\/table>/g,(m,body)=>{
+    const names=[...body.matchAll(/<tr><td>(?!<)([^<]*(?:<[^/][^>]*>[^<]*<\/[^>]+>)?[^<]*)<\/td><td><\/td><td>Date<\/td><\/tr>/g)].map(x=>x[1]);
+    const mid=(body.match(/<tr class="sp"><td colspan="3">([^<]+)<\/td>/)||[])[1];
+    return names.map((n,i)=>(i===1&&mid?'<p style="margin:18px 0 0">'+mid+'</p>':'')+'<p style="margin:34px 0 0">'+U+'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+D+'</p><p style="margin:0">'+n+'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Date</p>').join('');
+  });
+  return h;
+}
+/* ---- Word (.doc that opens in Word, with page margins and the same layout as the printout) ---- */
+$('#weCExp').onclick=()=>{ const c=document.querySelector('#wdEditor .wdcard'); const big=c.classList.toggle('cbig'); $('#weCExp').textContent=big?'⤡ Shrink':'⤢ Expand'; };
+$('#weWord').onclick=()=>{
+  const e=WD.edit, t0=WD.tasks.find(x=>x.id===e.id); if(!t0) return;
+  const t={...t0,f:{...t0.f,...e.f}}, T=WD_TEMPLATES[t.type], done=t0.status==='Complete'&&!e.dirty;
+  const css=WD_PRINT_CSS.replace(/@page\{[^}]*\}/,'').replace(/\.draft\{[^}]*\}/,'')+
+    '@page Section1{size:8.5in 11in;margin:0.9in 1in}div.Section1{page:Section1}table.sig td.sl{height:30px}';
+  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>'+esc(T.name)+'</title>'+
+    '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]--><style>'+css+'</style></head><body><div class="Section1">'+
+    (done?'':'<p style="color:#C00;font-weight:bold;text-align:center;font-family:Arial">DRAFT — not yet marked Complete</p>')+wdWordify(T.render(t))+'</div></body></html>';
+  const blob=new Blob(['\ufeff',html],{type:'application/msword'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=(T.name+' - '+(t.emp&&t.emp.name||'employee')).replace(/[\\/:*?"<>|]+/g,'')+(done?'':' (draft)')+'.doc';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
 };
 /* ---- print ---- */
 $('#wePrint').onclick=()=>{
@@ -3529,7 +3580,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=()=>{ if(!confirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-14.1';
+const APP_VERSION='2026-11-14.3';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
