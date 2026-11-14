@@ -530,7 +530,7 @@
   <div class="fbody">
     <label>Document type<select id="wnType"></select></label>
     <label>Employee<input id="wnEmp" list="wnEmpList" placeholder="Start typing a name from the training data" autocomplete="off"><datalist id="wnEmpList"></datalist></label>
-    <div class="grid2"><label>Assign to (HR)<select id="wnWho"></select></label><label>Due date (optional)<input id="wnDue" type="date"></label></div>
+    <div class="grid2" id="wnAdmin"><label>Assign to (HR)<select id="wnWho"></select></label><label>Due date (optional)<input id="wnDue" type="date"></label></div>
     <p class="pnote">The employee's job title, location and manager are filled in from the training data; everything can be edited in the form.</p>
     <div id="wnMsg" class="msg"></div>
   </div>
@@ -541,15 +541,18 @@
   <div class="fhead"><span id="weTitle"></span><button id="weClose" class="wdx" title="Close">✕</button></div>
   <div class="wdgrid">
     <aside class="wdside">
+      <div id="weAdmin">
       <label>Assigned to<select id="weWho"></select></label>
       <label>Due date<input id="weDue" type="date"></label>
       <label>Status<select id="weStatus"></select></label>
       <div id="weTimes" class="wdtimes"></div>
+      </div>
+      <div id="weMeta" class="wdtimes" style="display:none"></div>
       <h4 class="wdch">Comments <button type="button" id="weCExp" title="Make the comments area larger">⤢ Expand</button></h4>
       <div id="weComments" class="wdcomments"></div>
       <textarea id="weCText" rows="3" placeholder="Add a comment for the team…"></textarea>
       <button id="weCAdd" class="primary wdsmall">Add comment</button>
-      <h4>History</h4><div id="weLog" class="wdlog"></div>
+      <div id="weHist"><h4>History</h4><div id="weLog" class="wdlog"></div></div>
     </aside>
     <section class="wdmain"><div id="weRO" class="pnote" style="display:none;margin:0 0 8px">Only the assigned HR employee or an admin can edit this document.</div><div id="weForm" class="wdform"></div></section>
   </div>
@@ -1470,7 +1473,7 @@ function setMeta(src,n,updated){
   subEl.innerHTML='Learning &amp; compliance training activity<br><b style="color:#fff">'+nf.format(n)+'</b> enrollment records';
 }
 function startSession(payload,keyRaw,salt,man){
-  SESSION={email:payload.profile.email,profile:payload.profile,keyRaw,salt,manifest:man,wd:payload.wd||null};
+  SESSION={email:payload.profile.email,profile:payload.profile,keyRaw,salt,manifest:man,wd:payload.wd||null,caPeople:payload.ca&&payload.ca.people||null};
   setPrograms(payload.programs);
   ADMIN=payload.profile.role==='admin'?{raw:payload.data,users:payload.users||[],source:payload.source,updated:payload.updated,dirty:false,caDocs:payload.caDocs||null,people:payload.people||null,caUpdated:payload.caUpdated||null,docRepo:payload.docRepo||null,mail:payload.mail||null,caSource:payload.caSource||null,groups:payload.groups||[],wdRepo:payload.wdRepo||null}:null;
   M=buildModel(payload.data); setDefaults(); update(); setMeta(payload.source,M.n,payload.updated);
@@ -2172,11 +2175,9 @@ function wdStaffList(all){   // who can be assigned: admins + Workday users (all
   return WD.staff||[];
 }
 const wdName=e=>{ const s=wdStaffList(true).find(x=>x.email===e); return s?(s.name||s.email):(e||'—'); };
-function wdWhoOptions(first){   // names (with email) — Workday users first, then everyone else who has an account
-  const L=wdStaffList(!!ADMIN), lab=s=>esc((s.name?s.name+' — ':'')+s.email);
-  const a=L.filter(s=>s.wd!==false), b=L.filter(s=>s.wd===false);
-  return '<option value="">'+first+'</option>'+(a.length?'<optgroup label="HR / Workday users">'+a.map(s=>'<option value="'+esc(s.email)+'">'+lab(s)+'</option>').join('')+'</optgroup>':'')+
-    (b.length?'<optgroup label="Other users (will be given Workday access)">'+b.map(s=>'<option value="'+esc(s.email)+'">'+lab(s)+'</option>').join('')+'</optgroup>':'');
+function wdWhoOptions(first){   // HR staff who complete documents = admins (viewers only see documents they created)
+  const L=ADMIN?ADMIN.users.filter(u=>u.role==='admin').map(u=>({email:u.email,name:u.name||''})).sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email)):[];
+  return '<option value="">'+first+'</option>'+L.map(s=>'<option value="'+esc(s.email)+'">'+esc((s.name?s.name+' — ':'')+s.email)+'</option>').join('');
 }
 function wdGrant(email){   // assigning someone without Workday access gives it to them (takes effect after Publish)
   if(!ADMIN||!email) return false; const u=ADMIN.users.find(x=>x.email===email);
@@ -2229,14 +2230,14 @@ const wdDay=v=>v?new Date(v).toLocaleDateString('en-US',{month:'short',day:'nume
 function wdDur(ms){ if(!(ms>=0)) return ''; const m=Math.round(ms/6e4); if(m<60) return m+' min'; const h=Math.floor(m/60); if(h<24) return h+' h '+(m%60?m%60+' m':''); const d=Math.floor(h/24); return d+' d'+(h%24?' '+h%24+' h':''); }
 const wdTaken=t=>t.completedAt&&t.assignedAt?wdDur(new Date(t.completedAt)-new Date(t.assignedAt)):'';
 const wdOpenFor=t=>!t.completedAt&&t.assignedAt?wdDur(Date.now()-new Date(t.assignedAt)):'';
-function wdMine(){ return wdIsAdmin()?WD.tasks:WD.tasks.filter(t=>t.assignee===wdMe()); }
+function wdMine(){ return wdIsAdmin()?WD.tasks:WD.tasks.filter(t=>t.createdBy===wdMe()); }   // viewers: only the documents they created
 
 /* ---- main view ---- */
 function wdStatus(msg){ const el=document.getElementById('wdNote'); if(el) el.textContent=msg||''; }
 function wdRender(){
   const V=document.getElementById('wdView'); if(!V||V.style.display==='none') return;
   const admin=wdIsAdmin();
-  $('#wdNew').style.display=admin?'':'none'; $('#wdWhoWrap').style.display=admin?'':'none';
+  $('#wdNew').style.display=''; $('#wdWhoWrap').style.display=admin?'':'none'; $('#wdStats').style.display=admin?'':'none';
   const body=$('#wdBody');
   if(WD.err==='not-connected'){
     body.innerHTML='<div class="wdempty"><b>The Workday task list is not connected yet.</b><br>'+(admin?'Go to <b>Admin → Data → Workday repository</b>, paste the key for the private <b>workday-tasks</b> repository, then click Publish.':'Ask an admin to connect it.')+'</div>';
@@ -2250,16 +2251,24 @@ function wdRender(){
   who.innerHTML='<option value="">Everyone</option>'+wdStaffList(true).filter(s=>s.wd!==false||WD.tasks.some(t=>t.assignee===s.email)).map(s=>'<option value="'+esc(s.email)+'">'+esc(s.name||s.email)+'</option>').join('')+'<option value="__none">Not assigned</option>';
   who.value=cur;
   const f=WD.filt, q=f.q.trim().toLowerCase();
-  const rows=all.filter(t=>(!f.st||t.status===f.st)&&(!f.type||t.type===f.type)&&(!f.who||(f.who==='__none'?!t.assignee:t.assignee===f.who))&&
-    (!q||[t.emp&&t.emp.name,WD_TEMPLATES[t.type]&&WD_TEMPLATES[t.type].name,wdName(t.assignee),t.emp&&t.emp.loc].join(' ').toLowerCase().includes(q)))
+  const rows=all.filter(t=>(!admin||!f.st||t.status===f.st)&&(!f.type||t.type===f.type)&&(!f.who||(f.who==='__none'?!t.assignee:t.assignee===f.who))&&
+    (!q||[t.emp&&t.emp.name,WD_TEMPLATES[t.type]&&WD_TEMPLATES[t.type].name,admin?wdName(t.assignee):'',t.emp&&t.emp.loc].join(' ').toLowerCase().includes(q)))
     .sort((a,b)=>(WD_STATUSES.indexOf(a.status)===2)-(WD_STATUSES.indexOf(b.status)===2)||String(b.assignedAt||b.createdAt).localeCompare(String(a.assignedAt||a.createdAt)));
+  if(!admin){
+    body.innerHTML=rows.length?'<table class="wdtbl"><thead><tr><th>Employee</th><th>Document</th><th class="c">Loc</th><th>Created</th><th>Last changed</th><th class="c" title="Comments">💬</th><th></th></tr></thead><tbody>'+
+      rows.map(t=>'<tr data-id="'+esc(t.id)+'"><td><b>'+esc(t.emp&&t.emp.name||'')+'</b><div class="sub">'+esc(t.emp&&t.emp.title||'')+'</div></td><td>'+esc(WD_TEMPLATES[t.type]?WD_TEMPLATES[t.type].name:t.type)+'</td><td class="c">'+esc(t.emp&&t.emp.loc!=null?t.emp.loc:'')+'</td>'+
+        '<td>'+wdDay(t.createdAt)+'</td><td>'+wdDay(t.updatedAt)+'</td><td class="c">'+((t.comments||[]).length||'')+'</td><td class="c"><button class="wdopen">Open</button></td></tr>').join('')+'</tbody></table>'
+      :'<div class="wdempty">'+(all.length?'No documents match these filters.':'You have not created any documents yet. Click <b>+ New document</b> to start one.')+'</div>';
+    body.querySelectorAll('tr[data-id]').forEach(tr=>tr.onclick=()=>wdOpen(tr.dataset.id));
+    wdStatus(WD.lastLoad?'Updated '+WD.lastLoad.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):''); return;
+  }
   body.innerHTML=rows.length?'<table class="wdtbl"><thead><tr><th>Employee</th><th>Document</th><th class="c">Loc</th><th>Assigned to</th><th>Assigned</th><th class="c">Status</th><th>Completed</th><th>Time taken</th><th class="c" title="Comments">💬</th><th></th></tr></thead><tbody>'+
     rows.map(t=>'<tr data-id="'+esc(t.id)+'"><td><b>'+esc(t.emp&&t.emp.name||'')+'</b><div class="sub">'+esc(t.emp&&t.emp.title||'')+'</div></td><td>'+esc(WD_TEMPLATES[t.type]?WD_TEMPLATES[t.type].name:t.type)+'</td><td class="c">'+esc(t.emp&&t.emp.loc!=null?t.emp.loc:'')+'</td>'+
       '<td>'+(t.assignee?esc(wdName(t.assignee)):'<span class="sub">Not assigned</span>')+'</td><td>'+wdDay(t.assignedAt)+'</td>'+
       '<td class="c"><span class="wdpill" style="color:'+WD_SCOL[t.status]+';background:'+WD_SCOL[t.status]+'1F">'+esc(t.status)+'</span></td>'+
       '<td>'+wdDay(t.completedAt)+'</td><td>'+(t.completedAt?esc(wdTaken(t)):'<span class="sub">open '+esc(wdOpenFor(t))+'</span>')+'</td>'+
       '<td class="c">'+((t.comments||[]).length||'')+'</td><td class="c"><button class="wdopen">Open</button></td></tr>').join('')+'</tbody></table>'
-    :'<div class="wdempty">'+(all.length?'No tasks match these filters.':admin?'No tasks yet. Click <b>+ New document</b> to create one and assign it.':'Nothing is assigned to you right now.')+'</div>';
+    :'<div class="wdempty">'+(all.length?'No documents match these filters.':admin?'No tasks yet. Click <b>+ New document</b> to create one and assign it.':'You have not created any documents yet. Click <b>+ New document</b> to start one.')+'</div>';
   body.querySelectorAll('tr[data-id]').forEach(tr=>tr.onclick=()=>wdOpen(tr.dataset.id));
   wdStatus(WD.lastLoad?'Updated '+WD.lastLoad.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'');
 }
@@ -2288,13 +2297,20 @@ $('#wdType').onchange=e=>{ WD.filt.type=e.target.value; wdRender(); };
 
 /* ---- new task (admin) ---- */
 function wdPeople(){   // employees from the training data, with manager from the lookup
+  if(!ADMIN){   // viewers: the employees in their own (permission-limited) training data
+    const seen=new Map(), P=SESSION&&SESSION.caPeople, ix=new Map(); if(P) P.n.forEach((n,i)=>ix.set(n,i));
+    if(M) for(let i=0;i<M.n;i++){ const e=M.empNo[i]; if(e<0||seen.has(e)) continue; const name=M.names[M.name[i]]||''; if(!name) continue;
+      const k=ix.get(name.toLowerCase()); seen.set(e,{name,title:M.jobTitle[i]>=0?M.jobTitles[M.jobTitle[i]]:'',loc:M.loc[i]>=0?M.loc[i]:'',emp:e,mgr:k!==undefined?P.mgr[k]:''}); }
+    return [...seen.values()].sort((a,b)=>a.name.localeCompare(b.name));
+  }
   const list=typeof bulkPeople==='function'&&ADMIN?bulkPeople():[];
   const P=ADMIN&&ADMIN.people, ix=new Map(); if(P) P.n.forEach((n,i)=>ix.set(n,i));
   return list.map(p=>{ const name=(p.first+' '+p.last).trim(), i=ix.get(name.toLowerCase());
     return {name,title:p.job||'',loc:p.loc>=0?p.loc:'',emp:p.emp,mgr:i!==undefined?P.mgr[i]:''}; });
 }
 $('#wdNew').onclick=()=>{
-  if(!WD.repo||!WD.repo.token){ alert('Connect the Workday repository first: Admin → Data → Workday repository.'); return; }
+  if(!WD.repo||!WD.repo.token){ alert(ADMIN?'Connect the Workday repository first: Admin → Data → Workday repository.':'Workday is not connected yet. Please ask an admin.'); return; }
+  $('#wnAdmin').style.display=wdIsAdmin()?'':'none';
   const people=wdPeople(); WD.newPeople=people;
   $('#wnType').innerHTML=WD_TYPE_ORDER.map(k=>'<option value="'+k+'">'+WD_TEMPLATES[k].name+'</option>').join('');
   $('#wnEmpList').innerHTML=people.map((p,i)=>'<option value="'+esc(p.name+(p.loc!==''?' — Loc '+p.loc:'')+(p.title?' — '+p.title:''))+'">').join('');
@@ -2308,13 +2324,13 @@ $('#wnSave').onclick=async()=>{
   const v=$('#wnEmp').value.trim(), msg=$('#wnMsg'); msg.className='msg';
   if(!v){ msg.className='msg bad'; msg.textContent='Choose or type the employee\'s name.'; return; }
   const name=v.split(' — ')[0].trim(), p=(WD.newPeople||[]).find(x=>x.name.toLowerCase()===name.toLowerCase())||{name,title:'',loc:'',mgr:''};
-  const type=$('#wnType').value, who=$('#wnWho').value, me=wdMe(), now=wdNow();
-  const granted=wdGrant(who);
+  const type=$('#wnType').value, who=wdIsAdmin()?$('#wnWho').value:'', me=wdMe(), now=wdNow();
+  const granted=false;
   const f={}; for(const fd of WD_TEMPLATES[type].fields) if(fd.def!==undefined) f[fd.k]=fd.def;
   Object.assign(f,{date:wdToday(),toName:p.name,toTitle:p.title,fromName:p.mgr||'',location:p.loc!==''?String(p.loc):''});
   if(type==='esp'){ f.start=wdToday(); const e=new Date(); e.setDate(e.getDate()+30); f.end=e.toISOString().slice(0,10); }
   const t={id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),type,emp:{name:p.name,title:p.title,loc:p.loc,emp:p.emp??null,mgr:p.mgr||''},f,
-    status:'Not started',assignee:who||'',assignedAt:who?now:null,assignedBy:who?me:'',due:$('#wnDue').value||'',startedAt:null,completedAt:null,
+    status:'Not started',assignee:who||'',assignedAt:who?now:null,assignedBy:who?me:'',due:wdIsAdmin()?$('#wnDue').value||'':'',startedAt:null,completedAt:null,
     comments:[],log:[{by:me,at:now,what:'Created'+(who?' and assigned to '+wdName(who):'')}],createdAt:now,createdBy:me,updatedAt:now,updatedBy:me};
   const btn=$('#wnSave'); btn.disabled=true; btn.textContent='Saving…';
   try{ await wdSave(L=>L.push(t),'New '+WD_TEMPLATES[type].name+' for '+p.name); $('#wdNewForm').style.display='none'; wdRender(); wdOpen(t.id);
@@ -2326,7 +2342,9 @@ $('#wnSave').onclick=async()=>{
 /* ---- task editor ---- */
 function wdOpen(id){
   const t=WD.tasks.find(x=>x.id===id); if(!t) return;
-  const admin=wdIsAdmin(), mine=t.assignee===wdMe(), canEdit=admin||mine;
+  const admin=wdIsAdmin(), mine=t.createdBy===wdMe(), canEdit=admin||(mine&&t.status!=='Complete');   // viewers edit their own document until HR finalises it
+  $('#weAdmin').style.display=admin?'':'none'; $('#weHist').style.display=admin?'':'none'; $('#weMeta').style.display=admin?'none':'';
+  if(!admin) $('#weMeta').innerHTML='<div><span>Created</span><b>'+wdWhen(t.createdAt)+'</b></div><div><span>Last changed</span><b>'+wdWhen(t.updatedAt)+'</b></div>';
   WD.edit={id,f:{...t.f},status:t.status,assignee:t.assignee||'',due:t.due||'',assignedAt:t.assignedAt,dirty:false};
   const T=WD_TEMPLATES[t.type];
   $('#weTitle').textContent=(T?T.name:t.type)+' — '+(t.emp&&t.emp.name||'');
@@ -2335,10 +2353,10 @@ function wdOpen(id){
   $('#weWho').value=t.assignee||''; $('#weWho').disabled=!admin;
   $('#weDue').value=t.due||''; $('#weDue').disabled=!admin;
   $('#weStatus').innerHTML=WD_STATUSES.map(s=>'<option'+(s===t.status?' selected':'')+'>'+s+'</option>').join(''); $('#weStatus').disabled=!canEdit;
-  $('#weDel').style.display=admin?'':'none';
+  $('#weDel').style.display=admin||(mine&&!t.assignee&&t.status==='Not started')?'':'none';   // viewers can delete their own until HR picks it up
   wdTimes(t);
   wdComments(t);
-  $('#weCText').value=''; $('#weCAdd').disabled=!canEdit; $('#weCText').disabled=!canEdit;
+  $('#weCText').value=''; $('#weCAdd').disabled=!(admin||mine); $('#weCText').disabled=!(admin||mine);
   // right: template form
   const form=$('#weForm');
   form.innerHTML=(T?T.fields:[]).map(fd=>{
@@ -2354,7 +2372,7 @@ function wdOpen(id){
   form.querySelectorAll('.wdchips button').forEach(b=>b.onclick=()=>{ const p=WD_POLICIES.find(x=>x.k===b.dataset.p), ta=$('#wf_policies');
     ta.value=(ta.value.trim()?ta.value.replace(/\s+$/,'')+'\n':'')+'- '+p.text; WD.edit.f.policies=ta.value; WD.edit.dirty=true; wdDirty(); });
   $('#weSave').style.display=canEdit?'':'none';
-  $('#weRO').style.display=canEdit?'none':'';
+  $('#weRO').style.display=canEdit?'none':''; $('#weRO').textContent=mine?'HR has finalised this document, so it can no longer be changed. You can still add comments, print it or download it.':'Only the person who created this document or an admin can edit it.';
   wdDirty();
   document.querySelector('#wdEditor .wdcard').classList.remove('cbig'); $('#weCExp').textContent='⤢ Expand';
   $('#wdEditor').style.display='flex';
@@ -2375,14 +2393,14 @@ function wdComments(t){
   $('#weLog').innerHTML=L.map(l=>'<div>'+wdWhen(l.at)+' · '+esc(wdName(l.by))+': '+esc(l.what)+'</div>').join('');
 }
 function wdDirty(){ const e=WD.edit; if(!e) return; const t=WD.tasks.find(x=>x.id===e.id);
-  const ch=e.dirty||$('#weStatus').value!==t.status||$('#weWho').value!==(t.assignee||'')||$('#weDue').value!==(t.due||'');
+  const ch=e.dirty||(wdIsAdmin()&&($('#weStatus').value!==t.status||$('#weWho').value!==(t.assignee||'')||$('#weDue').value!==(t.due||'')));
   $('#weSave').disabled=!ch; $('#weSave').textContent=ch?'Save changes':'Saved'; }
 ['#weStatus','#weWho','#weDue'].forEach(s=>$(s).addEventListener('change',wdDirty));
 function wdClose(){ if(WD.edit&&!$('#weSave').disabled&&$('#weSave').style.display!=='none'&&!confirm('Close without saving your changes?')) return; $('#wdEditor').style.display='none'; WD.edit=null; wdRender(); }
 $('#weClose').onclick=wdClose;
 function wdApplyEdit(L,me,now){
   const e=WD.edit, t=L.find(x=>x.id===e.id); if(!t) throw new Error('This task was deleted by someone else.');
-  const st=$('#weStatus').value, who=$('#weWho').value, due=$('#weDue').value;
+  const adm=wdIsAdmin(), st=adm?$('#weStatus').value:t.status, who=adm?$('#weWho').value:(t.assignee||''), due=adm?$('#weDue').value:(t.due||'');
   if(e.dirty){ t.f={...t.f,...e.f}; t.log=(t.log||[]).concat({by:me,at:now,what:'Edited the document'}); }
   if(who!==(t.assignee||'')&&wdIsAdmin()){ t.assignee=who; t.assignedAt=who?now:null; t.assignedBy=who?me:''; t.log=(t.log||[]).concat({by:me,at:now,what:who?'Assigned to '+wdName(who):'Unassigned'}); }
   if(due!==(t.due||'')&&wdIsAdmin()){ t.due=due; t.log=(t.log||[]).concat({by:me,at:now,what:due?'Due date set to '+due:'Due date removed'}); }
@@ -2398,9 +2416,9 @@ function wdApplyEdit(L,me,now){
 }
 $('#weSave').onclick=async()=>{
   const e=WD.edit, btn=$('#weSave'), me=wdMe(), now=wdNow();
-  if($('#weStatus').value==='Complete'&&!confirm('Mark this document Complete? The time taken will be recorded now.')) return;
+  if(wdIsAdmin()&&$('#weStatus').value==='Complete'&&t0status(e.id)!=='Complete'&&!confirm('Mark this document Complete? The time taken will be recorded now.')) return;
   btn.disabled=true; btn.textContent='Saving…';
-  const granted=wdIsAdmin()&&wdGrant($('#weWho').value);
+  const granted=false;
   try{ await wdSave(L=>wdApplyEdit(L,me,now),'Update task '+e.id); if(granted) setTimeout(()=>toast(wdName($('#weWho').value)+' now has Workday access. Click Publish so they can see this task.'),1600); const t=WD.tasks.find(x=>x.id===e.id); e.dirty=false; wdTimes(t); wdComments(t); wdDirty(); toast('Saved.'); }
   catch(err){ alert(err.message); wdDirty(); }
 };
@@ -2437,18 +2455,19 @@ $('#weWord').onclick=()=>{
     '@page Section1{size:8.5in 11in;margin:0.9in 1in}div.Section1{page:Section1}table.sig td.sl{height:30px}';
   const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>'+esc(T.name)+'</title>'+
     '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]--><style>'+css+'</style></head><body><div class="Section1">'+
-    (done?'':'<p style="color:#C00;font-weight:bold;text-align:center;font-family:Arial">DRAFT — not yet marked Complete</p>')+wdWordify(T.render(t))+'</div></body></html>';
+    (done?'':'<p style="color:#C00;font-weight:bold;text-align:center;font-family:Arial">DRAFT</p>')+wdWordify(T.render(t))+'</div></body></html>';
   const blob=new Blob(['\ufeff',html],{type:'application/msword'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download=(T.name+' - '+(t.emp&&t.emp.name||'employee')).replace(/[\\/:*?"<>|]+/g,'')+(done?'':' (draft)')+'.doc';
   document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
 };
+function t0status(id){ const t=WD.tasks.find(x=>x.id===id); return t?t.status:''; }
 /* ---- print ---- */
 $('#wePrint').onclick=()=>{
   const e=WD.edit, t0=WD.tasks.find(x=>x.id===e.id); if(!t0) return;
   const t={...t0,f:{...t0.f,...e.f}}, T=WD_TEMPLATES[t.type];
   const done=t0.status==='Complete'&&!e.dirty;
-  if(!done&&!confirm('This document is not marked Complete'+(e.dirty?' (or has unsaved changes)':'')+'. Print it as a DRAFT?')) return;
+  if(!done&&!confirm(wdIsAdmin()?'This document is not marked Complete'+(e.dirty?' (or has unsaved changes)':'')+'. Print it as a DRAFT?':'This document has not been finalised by HR yet, so it will print as a DRAFT. Continue?')) return;
   const w=window.open('','_blank'); if(!w){ alert('Allow pop-ups for this site to print.'); return; }
   w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(T.name+' - '+(t.emp&&t.emp.name||''))+'</title><style>'+WD_PRINT_CSS+'</style></head><body>'+(done?'':'<div class="draft">DRAFT</div>')+T.render(t)+'</body></html>');
   w.document.close(); w.focus(); setTimeout(()=>w.print(),300);
@@ -3580,7 +3599,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=()=>{ if(!confirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-14.3';
+const APP_VERSION='2026-11-14.4';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
