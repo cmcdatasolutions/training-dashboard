@@ -2732,10 +2732,20 @@ async function publish(cfg){
   const keepHashes=new Set(manifest.files);
   for(const h of old) if(!keepHashes.has(h)) tree.push({path:'data/u/'+h+'.json',mode:'100644',type:'blob',sha:null});
   plog('Uploading…');
-  const t=await api('/git/trees',{method:'POST',body:JSON.stringify({base_tree:base.tree.sha,tree})});
   const wipe=document.getElementById('gWipe').checked;
-  const c=await api('/git/commits',{method:'POST',body:JSON.stringify({message:'Dashboard update '+version+' by '+SESSION.email,tree:t.sha,parents:wipe?[]:[ref.object.sha]})});
-  await api('/git/refs/heads/'+encodeURIComponent(cfg.branch),{method:'PATCH',body:JSON.stringify({sha:c.sha,force:wipe})});
+  // If the site was updated while publishing (e.g. a new dashboard version), rebuild on top of the newest copy and try again
+  let headSha=ref.object.sha, baseTree=base.tree.sha;
+  for(let attempt=1;;attempt++){
+    const t=await api('/git/trees',{method:'POST',body:JSON.stringify({base_tree:baseTree,tree})});
+    const c=await api('/git/commits',{method:'POST',body:JSON.stringify({message:'Dashboard update '+version+' by '+SESSION.email,tree:t.sha,parents:wipe?[]:[headSha]})});
+    try{ await api('/git/refs/heads/'+encodeURIComponent(cfg.branch),{method:'PATCH',body:JSON.stringify({sha:c.sha,force:wipe})}); break; }
+    catch(err){
+      if(attempt>=4||!/422|fast forward/i.test(String(err&&err.message))) throw err;
+      plog('The site changed while publishing — retrying on the newest version…');
+      const r2=await api('/git/ref/heads/'+encodeURIComponent(cfg.branch)); headSha=r2.object.sha;
+      baseTree=(await api('/git/commits/'+headSha)).tree.sha;
+    }
+  }
   if(wipe) plog('Previous data versions replaced (history cleared).');
   // keep my own session valid if I changed my own password
   const me=ADMIN.users.find(x=>x.email===SESSION.email);
@@ -3661,7 +3671,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=()=>{ if(!confirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-14.6';
+const APP_VERSION='2026-11-14.7';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
