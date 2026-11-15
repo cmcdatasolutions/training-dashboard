@@ -2151,7 +2151,7 @@ function wdSep(t){
 }
 const WD_PRINT_CSS='@page{size:letter;margin:0.9in 1in}body{font-family:"Times New Roman",Times,serif;font-size:11.5pt;line-height:1.38;color:#000;margin:0}'+
   'h1{text-align:center;font-size:15pt;margin:0 0 16px;text-transform:uppercase;letter-spacing:.5px}h2{font-size:11.5pt;margin:14px 0 6px;text-decoration:underline}'+
-  'p{margin:0 0 9px;text-align:justify}p.ind{text-indent:.5in}p.num{text-indent:.5in}ul{margin:0 0 9px 0;padding-left:.55in}li{margin-bottom:3px}'+
+  'p{margin:0 0 9px;text-align:left}p.ind{text-indent:.5in}p.num{text-indent:.5in}ul{margin:0 0 9px 0;padding-left:.55in}li{margin-bottom:3px}'+
   'table.memo{border-collapse:collapse;margin-bottom:12px}table.memo td{padding:1px 14px 1px 0;vertical-align:top}table.memo td:first-child{font-weight:bold;width:52px}'+
   'table.esp{border-collapse:collapse;width:100%;margin-bottom:12px}table.esp td{padding:2px 8px 2px 0;vertical-align:top}table.esp td:nth-child(odd){font-weight:bold;white-space:nowrap}'+
   '.blank{display:inline-block;border-bottom:1px solid #000;height:1em}.todo{color:#B00;font-style:italic}'+
@@ -2342,12 +2342,14 @@ function wdCounts(all){
 function wdShow(on){
   const V=document.getElementById('wdView'); V.style.display=on?'flex':'none';
   if(on){ WD.repo=wdRepoFor(); WD.staff=SESSION&&SESSION.wd?SESSION.wd.staff||[]:[]; if(ADMIN&&WD.repo) wdEnsureKeys();
-    $('#wdType').innerHTML='<option value="">All documents</option>'+WD_TYPE_ORDER.map(k=>'<option value="'+k+'">'+WD_TEMPLATES[k].name+'</option>').join('');
+    $('#wdType').innerHTML='<option value="">All documents</option>'+wdTypesFor().map(k=>'<option value="'+k+'">'+WD_TEMPLATES[k].name+'</option>').join('');
     $('#wdType').value=WD.filt.type;
     wdRender(); wdLoad(WD.loaded);
     clearInterval(WD.timer); WD.timer=setInterval(()=>{ if(!WD.edit&&document.visibilityState==='visible') wdLoad(true); },60000);
   } else clearInterval(WD.timer);
 }
+const WD_ADMIN_ONLY=new Set(['sep']);   // separation agreements: HR admins only
+function wdTypesFor(){ return WD_TYPE_ORDER.filter(k=>wdIsAdmin()||!WD_ADMIN_ONLY.has(k)); }
 function wdRepoFor(){ return ADMIN?ADMIN.wdRepo||null:(SESSION&&SESSION.wd&&SESSION.wd.repo)||null; }
 $('#wdRefresh').onclick=()=>wdLoad();
 $('#wdQ').oninput=e=>{ WD.filt.q=e.target.value; wdRender(); };
@@ -2371,7 +2373,7 @@ $('#wdNew').onclick=()=>{
   if(!WD.repo||!WD.repo.token){ alert(ADMIN?'Connect the Workday repository first: Admin → Data → Workday repository.':'Workday is not connected yet. Please ask an admin.'); return; }
   $('#wnAdmin').style.display=wdIsAdmin()?'':'none';
   const people=wdPeople(); WD.newPeople=people;
-  $('#wnType').innerHTML=WD_TYPE_ORDER.map(k=>'<option value="'+k+'">'+WD_TEMPLATES[k].name+'</option>').join('');
+  $('#wnType').innerHTML=wdTypesFor().map(k=>'<option value="'+k+'">'+WD_TEMPLATES[k].name+'</option>').join('');
   $('#wnEmpList').innerHTML=people.map((p,i)=>'<option value="'+esc(p.name+(p.loc!==''?' — Loc '+p.loc:'')+(p.title?' — '+p.title:''))+'">').join('');
   $('#wnEmp').value=''; $('#wnMsg').textContent='';
   $('#wnWho').innerHTML=wdWhoOptions('Assign later');
@@ -2384,6 +2386,7 @@ $('#wnSave').onclick=async()=>{
   if(!v){ msg.className='msg bad'; msg.textContent='Choose or type the employee\'s name.'; return; }
   const name=v.split(' — ')[0].trim(), p=(WD.newPeople||[]).find(x=>x.name.toLowerCase()===name.toLowerCase())||{name,title:'',loc:'',mgr:''};
   const type=$('#wnType').value, who=wdIsAdmin()?$('#wnWho').value:'', me=wdMe(), now=wdNow();
+  if(!wdIsAdmin()&&WD_ADMIN_ONLY.has(type)){ msg.className='msg bad'; msg.textContent='Only HR admins can create this document.'; return; }
   const granted=false;
   const f={}; for(const fd of WD_TEMPLATES[type].fields) if(fd.def!==undefined) f[fd.k]=fd.def;
   Object.assign(f,{date:wdToday(),toName:p.name,toTitle:p.title,fromName:p.mgr||'',location:p.loc!==''?String(p.loc):''});
@@ -2493,15 +2496,24 @@ $('#weDel').onclick=async()=>{
   try{ await wdSave(L=>{ const i=L.findIndex(x=>x.id===e.id); if(i>=0) L.splice(i,1); },'Delete task '+e.id,wdOwner(e.id)); $('#wdEditor').style.display='none'; WD.edit=null; wdRender(); }
   catch(err){ alert(err.message); }
 };
-function wdWordify(h){   // Word ignores borders on empty cells/divs: use explicit widths and underscore lines instead
-  const U='_'.repeat(52), D='_'.repeat(20);
-  h=h.replace(/<table class="memo">/g,'<table class="memo" width="100%" style="width:100%">').replace(/<tr><td>([A-Za-z]+:)<\/td><td>/g,'<tr><td width="12%" style="width:12%;font-weight:bold">$1</td><td>');
-  h=h.replace(/<table class="esp">/g,'<table class="esp" width="100%" style="width:100%">');
-  h=h.replace(/<div class="line"><\/div>/g,'<p style="margin:0">'+'_'.repeat(86)+'</p>');
+function wdWordify(h){   // Word layout: fixed column widths, lines drawn as cell borders (one per row so Word doesn't merge them)
+  const B='solid windowtext 1.0pt', TB='width:100%;border-collapse:collapse;table-layout:fixed';
+  const cols=w=>'<colgroup>'+w.map(x=>'<col width="'+Math.round(x*6.5*96/100)+'" style="width:'+x+'%">').join('')+'</colgroup>';
+  h=h.replace(/<table class="memo">/g,'<table width="100%" cellpadding="0" cellspacing="0" style="'+TB+';margin-bottom:10pt">'+cols([12,88]))
+     .replace(/<tr><td>([A-Za-z]+:)<\/td><td>/g,'<tr><td valign="top" style="font-weight:bold;padding:1pt 0">$1</td><td valign="top" style="padding:1pt 0">');
+  h=h.replace(/<table class="esp">([\s\S]*?)<\/table>/g,(m,b)=>'<table width="100%" cellpadding="0" cellspacing="0" style="'+TB+';margin-bottom:10pt">'+cols([20,31,16,33])+
+     b.replace(/<td>([^<]*:)<\/td>/g,'<td valign="top" style="font-weight:bold;padding:2pt 4pt 2pt 0">$1</td>').replace(/<td>(?![^<]*:<\/td>)/g,'<td valign="top" style="padding:2pt 6pt 2pt 0">')
+      .replace(/<td colspan="3">/g,'<td colspan="3" valign="top" style="padding:2pt 0">')+'</table>');
+  h=h.replace(/<span class="blank" style="min-width:(\d+)px"><\/span>/g,(m,w)=>'<span style="border-bottom:'+B+'">'+'&nbsp;'.repeat(Math.max(8,Math.round(w/5)))+'</span>');
+  h=h.replace(/(?:<div class="line"><\/div>)+/g,m=>{ const n=(m.match(/class="line"/g)||[]).length;
+    return '<table width="100%" cellpadding="0" cellspacing="0" style="'+TB+'">'+cols([100])+('<tr style="height:20pt"><td style="border-bottom:'+B+';height:20pt">&nbsp;</td></tr>').repeat(n)+'</table><p style="margin:0 0 6pt">&nbsp;</p>'; });
   h=h.replace(/<table class="sig">([\s\S]*?)<\/table>/g,(m,body)=>{
-    const names=[...body.matchAll(/<tr><td>(?!<)([^<]*(?:<[^/][^>]*>[^<]*<\/[^>]+>)?[^<]*)<\/td><td><\/td><td>Date<\/td><\/tr>/g)].map(x=>x[1]);
+    const names=[...body.matchAll(/<tr><td>(?!<)([\s\S]*?)<\/td><td><\/td><td>Date<\/td><\/tr>/g)].map(x=>x[1]);
     const mid=(body.match(/<tr class="sp"><td colspan="3">([^<]+)<\/td>/)||[])[1];
-    return names.map((n,i)=>(i===1&&mid?'<p style="margin:18px 0 0">'+mid+'</p>':'')+'<p style="margin:34px 0 0">'+U+'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+D+'</p><p style="margin:0">'+n+'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Date</p>').join('');
+    // one row per signer: the signature line is the top border of the name, so a signer never splits across pages
+    const block=n=>'<table width="100%" cellpadding="0" cellspacing="0" style="'+TB+';margin-top:30pt;page-break-inside:avoid">'+cols([58,8,34])+
+      '<tr><td valign="top" style="border-top:'+B+';padding-top:2pt;font-size:10.5pt">'+n+'</td><td>&nbsp;</td><td valign="top" style="border-top:'+B+';padding-top:2pt;font-size:10.5pt">Date</td></tr></table>';
+    return names.map((n,i)=>(i===1&&mid?'<p style="margin:18pt 0 0">'+mid+'</p>':'')+block(n)).join('');
   });
   return h;
 }
@@ -2511,7 +2523,8 @@ $('#weWord').onclick=()=>{
   const e=WD.edit, t0=WD.tasks.find(x=>x.id===e.id); if(!t0) return;
   const t={...t0,f:{...t0.f,...e.f}}, T=WD_TEMPLATES[t.type], done=t0.status==='Complete'&&!e.dirty;
   const css=WD_PRINT_CSS.replace(/@page\{[^}]*\}/,'').replace(/\.draft\{[^}]*\}/,'')+
-    '@page Section1{size:8.5in 11in;margin:0.9in 1in}div.Section1{page:Section1}table.sig td.sl{height:30px}';
+    '@page Section1{size:8.5in 11in;margin:1in 1in 1in 1in;mso-header-margin:.5in;mso-footer-margin:.5in}div.Section1{page:Section1}'+
+    'body{font-family:"Times New Roman",serif;font-size:11.5pt}p{margin:0 0 8pt;line-height:115%}li{margin:0 0 3pt}ul{margin-top:0;margin-bottom:8pt}h1{font-family:"Times New Roman",serif;font-size:15pt;margin:0 0 14pt;text-align:center}h2{font-family:"Times New Roman",serif;font-size:11.5pt;margin:12pt 0 5pt 0;text-indent:0}';
   const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>'+esc(T.name)+'</title>'+
     '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]--><style>'+css+'</style></head><body><div class="Section1">'+
     (done?'':'<p style="color:#C00;font-weight:bold;text-align:center;font-family:Arial">DRAFT</p>')+wdWordify(T.render(t))+'</div></body></html>';
@@ -3671,7 +3684,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=()=>{ if(!confirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-14.7';
+const APP_VERSION='2026-11-14.8';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
