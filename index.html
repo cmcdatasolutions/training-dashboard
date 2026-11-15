@@ -426,6 +426,15 @@
   #weWord{font:inherit;font-weight:700;padding:8px 14px;border:1px solid #2B579A;border-radius:6px;background:#2B579A;color:#fff;cursor:pointer;margin-right:8px}
   #weWord:hover{background:#1E3F73}
   #wePrint{font:inherit;font-weight:700;padding:8px 14px;border:1px solid #14284B;border-radius:6px;background:#fff;color:#14284B;cursor:pointer}
+  .uidlg{position:fixed;inset:0;z-index:2147483000;background:rgba(11,18,32,.5);display:flex;align-items:center;justify-content:center;font-family:Segoe UI,system-ui,-apple-system,sans-serif}
+  .uibox{width:min(520px,92vw);background:#fff;border-radius:12px;box-shadow:0 18px 48px rgba(11,18,32,.35);overflow:hidden}
+  .uihead{padding:13px 18px;background:linear-gradient(90deg,#14284B,#1F4E8C 60%,#7A2E5C);color:#fff;font-weight:800;font-size:15px;letter-spacing:.2px}
+  .uimsg{padding:18px 18px 8px;font-size:14.5px;line-height:1.5;color:#14284B;white-space:pre-wrap;max-height:60vh;overflow:auto}
+  .uibtns{display:flex;justify-content:flex-end;gap:10px;padding:12px 18px 16px}
+  .uibtns button{font:inherit;font-size:14px;font-weight:700;padding:8px 18px;border-radius:7px;cursor:pointer}
+  .uicancel{border:1px solid #C5D0E0;background:#fff;color:#14284B}
+  .uiok{border:none;background:#1F4E8C;color:#fff}.uiok:hover{background:#14284B}
+  .uiok.danger{background:#C0392B}.uiok.danger:hover{background:#962D22}
   #userForm{position:fixed;inset:0;z-index:260000;background:rgba(11,18,32,.45);display:flex;align-items:center;justify-content:center}
   .fcard{width:min(1000px,94vw);max-height:92vh;background:#fff;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}
   .fhead{padding:14px 18px;font-weight:700;font-size:15px;background:#F4F7FB;border-bottom:1px solid #DCE3EE;color:#14284B}
@@ -794,6 +803,26 @@
 </div>
 
 <script>
+/* ---- Our own pop-ups (instead of the browser's "cmcdatasolutions.github.io says" boxes) ---- */
+function uiDialog(msg,opts){
+  return new Promise(res=>{
+    const o=opts||{}, ov=document.createElement('div'); ov.className='uidlg';
+    const lines=String(msg==null?'':msg);
+    ov.innerHTML='<div class="uibox" role="dialog" aria-modal="true"><div class="uihead">'+(o.title||'')+'</div><div class="uimsg"></div><div class="uibtns">'+
+      (o.cancel?'<button class="uicancel">'+o.cancel+'</button>':'')+'<button class="uiok'+(o.danger?' danger':'')+'">'+(o.ok||'OK')+'</button></div></div>';
+    ov.querySelector('.uimsg').textContent=lines;
+    const done=v=>{ document.removeEventListener('keydown',key,true); ov.remove(); res(v); };
+    const key=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); done(false); } else if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); done(true); } };
+    ov.querySelector('.uiok').onclick=()=>done(true);
+    if(o.cancel) ov.querySelector('.uicancel').onclick=()=>done(false);
+    ov.addEventListener('mousedown',e=>{ if(e.target===ov&&o.cancel) done(false); });
+    document.addEventListener('keydown',key,true); document.body.appendChild(ov); ov.querySelector('.uiok').focus();
+  });
+}
+function uiConfirm(msg){ const danger=/delete|remove|cannot be undone|discard|disconnect|sign out/i.test(String(msg));
+  return uiDialog(msg,{title:danger?'Please confirm':'Confirm',ok:danger&&/delete/i.test(String(msg))?'Delete':danger&&/remove/i.test(String(msg))?'Remove':'OK',cancel:'Cancel',danger}); }
+function uiAlert(msg){ return uiDialog(msg,{title:/error|could not|cannot|failed|expired|not /i.test(String(msg))?'Something needs attention':'Notice',ok:'OK'}); }
+
 "use strict";
 /* ---------------- Theme (Power BI CY24SU06) ---------------- */
 const DATA_COLORS=['#118DFF','#12239E','#E66C37','#6B007B','#E044A7','#744EC2','#D9B300','#D64550','#197278','#1AAB40','#15C6F4','#4092FF','#FFA058','#BE5DC9','#F472D0','#B5A1FF','#C4A200','#FF8080','#00DBBC','#5BD667','#0091D5','#4668C5','#FF6300','#99008A','#EC008C','#533285','#99700A','#FF4141','#1F9A85','#25891C','#0057A2','#002050','#C94F0F','#450F54','#B60064','#34124F','#6A5A29','#1AAB40','#BA141A','#0C3D37','#0B511F'];
@@ -950,7 +979,7 @@ const DASHBOARDS=[
   {name:'Go1 Training',url:'https://cmcdatasolutions.github.io/go1-training-catalog/'}
 ];
 const sw=box('dashsel',944,11,326,34,2,'<span>Dashboard</span><select id="dashSel" aria-label="Select dashboard">'+DASHBOARDS.map((d,i)=>'<option value="'+i+'"'+(d.url?'':' selected')+'>'+esc(d.name)+'</option>').join('')+'</select>');
-sw.querySelector('select').addEventListener('change',e=>{const d=DASHBOARDS[+e.target.value]; if(d&&d.url){ if(ADMIN&&ADMIN.dirty&&!confirm('You have unpublished changes. Leave this dashboard?')){e.target.value='0';return;} location.href=d.url; }});
+sw.querySelector('select').addEventListener('change',async e=>{const d=DASHBOARDS[+e.target.value]; if(d&&d.url){ if(ADMIN&&ADMIN.dirty&&!await uiConfirm('You have unpublished changes. Leave this dashboard?')){e.target.value='0';return;} location.href=d.url; }});
 const ICONS={
   emp:'<svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0 2c-2.3 0-7 1.2-7 3.5V19h7v-2.5c0-.9.4-1.8 1.1-2.5A10 10 0 0 0 8 13zm8 0c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z"/></svg>',
   mod:'<svg viewBox="0 0 24 24"><path d="M4 6H2v14a2 2 0 0 0 2 2h14v-2H4zm16-4H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-1 9H9V9h10zm-4 4H9v-2h6zm4-8H9V5h10z"/></svg>',
@@ -1311,7 +1340,7 @@ function sumRender(){
 
 async function tdExport(){
   if(PROG_SUM.length){
-    if(!SUM.rows.length){ alert('There are no rows to export.'); return; }
+    if(!SUM.rows.length){ uiAlert('There are no rows to export.'); return; }
     await ensureXLSX();
     const aoa=[['IAP','Employee Name','Job Title','Location','Enrollment Date','Completion Date','Modules completed','Modules enrolled','Status'],
       ...SUM.rows.map(r=>[r.iap,r.name,r.job,r.loc<0?'':r.loc,r.en>=0?fmtDate(r.en):'',r.cd>=0?fmtDate(r.cd):'',r.fin,r.total,r.st])];
@@ -1319,7 +1348,7 @@ async function tdExport(){
     const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'IAP summary');
     XLSX.writeFile(wb,'IAP_summary_'+PROG_SUM.map(k=>M.progs[k]).join('_').replace(/[^A-Za-z0-9_-]+/g,'')+'.xlsx'); return;
   }
-  if(!tRows.length){ alert('There are no rows to export.'); return; }
+  if(!tRows.length){ uiAlert('There are no rows to export.'); return; }
   const btn=tdBtns.querySelector('.caexport'); btn.disabled=true; btn.textContent='Preparing…';
   try{
     await ensureXLSX();
@@ -1330,7 +1359,7 @@ async function tdExport(){
     const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Training');
     const f=S.dFrom!==null?isoDate(S.dFrom):'all', tt=S.dTo!==null?isoDate(S.dTo):'today';
     XLSX.writeFile(wb,'Training_Development_'+f+'_to_'+tt+'.xlsx');
-  }catch(e){ alert('Could not create the Excel file: '+e.message); }
+  }catch(e){ uiAlert('Could not create the Excel file: '+e.message); }
   finally{ btn.disabled=false; btn.textContent='Export'; }
 }
 
@@ -1535,8 +1564,8 @@ async function resumeSession(){
     const key=b64d(s.key); const payload=await decryptBundle(b,key); startSession(payload,key,b.salt,man); return true;
   }catch(e){ try{sessionStorage.removeItem('td_sess');}catch(_){} return false; }
 }
-function signOut(){
-  if(ADMIN&&ADMIN.dirty&&!confirm('You have unpublished changes. Sign out anyway?')) return;
+async function signOut(){
+  if(ADMIN&&ADMIN.dirty&&!await uiConfirm('You have unpublished changes. Sign out anyway?')) return;
   try{sessionStorage.removeItem('td_sess');}catch(e){}
   location.reload();
 }
@@ -1657,9 +1686,9 @@ function renderGroups(){
       '<td class="dbs">'+dashCells(g.perms,false)+'</td><td class="act"><button data-g="'+g.id+'" class="gedit">Edit</button><button data-g="'+g.id+'" class="del gdel">Remove</button></td></tr>'; }).join('')
     :'<tr><td colspan="7" class="none">No groups yet. Click <b>+ New group</b> to give several users the same access at once.</td></tr>';
   $('#gBody').querySelectorAll('.gedit').forEach(b=>b.onclick=()=>editGroup(b.dataset.g));
-  $('#gBody').querySelectorAll('.gdel').forEach(b=>b.onclick=()=>{
+  $('#gBody').querySelectorAll('.gdel').forEach(b=>b.onclick=async ()=>{
     const g=ADMIN.groups.find(x=>x.id===b.dataset.g), n=ADMIN.users.filter(u=>u.group===g.id).length;
-    if(!confirm('Remove the group "'+g.name+'"?'+(n?'\n\nIts '+n+' member(s) keep the same access as now, as their own permissions.':''))) return;
+    if(!await uiConfirm('Remove the group "'+g.name+'"?'+(n?'\n\nIts '+n+' member(s) keep the same access as now, as their own permissions.':''))) return;
     for(const u of ADMIN.users) if(u.group===g.id) delete u.group;
     ADMIN.groups=ADMIN.groups.filter(x=>x!==g); markDirty(); renderUsers();
   });
@@ -1724,15 +1753,15 @@ async function saveGroup(){
   if((ADMIN.groups||[]).some(x=>x.name.toLowerCase()===name.toLowerCase()&&x!==EDIT.orig)){ err.textContent='A group with that name already exists.'; return; }
   EDIT.perms.td=$('#fTD').checked; EDIT.perms.ca=$('#fCA').checked; EDIT.perms.go1=$('#fGO1').checked; EDIT.perms.wd=$('#fWD').checked;
   if(!EDIT.perms.td&&!EDIT.perms.ca&&!EDIT.perms.go1&&!EDIT.perms.wd){ err.textContent='Tick at least one dashboard for this group.'; return; }
-  if((EDIT.perms.td||EDIT.perms.ca)&&!hasLimits(EDIT.perms)&&!confirm('This group has no location/module/program limits, so its members will see ALL data in the dashboards ticked. Continue?')) return;
+  if((EDIT.perms.td||EDIT.perms.ca)&&!hasLimits(EDIT.perms)&&!await uiConfirm('This group has no location/module/program limits, so its members will see ALL data in the dashboards ticked. Continue?')) return;
   // new accounts from the training data
   const newp=[...(EDIT.newp||new Map()).entries()].map(([e,v])=>({p:EDIT.people.find(x=>x.emp===e),email:normEmail(v.email)}));
   { const ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/, taken=new Set(ADMIN.users.map(u=>u.email)), mine=new Set(), bad=[];
     for(const n of newp){ if(!ok.test(n.email)) bad.push(n.p.first+' '+n.p.last+': not a valid email'); else if(taken.has(n.email)) bad.push(n.email+' already has an account (tick them under Existing users)'); else if(mine.has(n.email)) bad.push(n.email+' is used twice'); mine.add(n.email); }
     if(bad.length){ err.textContent='Fix these emails first: '+bad.slice(0,6).join('; ')+(bad.length>6?' …and '+(bad.length-6)+' more':''); memTab('td'); return; } }
-  if(newp.length&&!confirm('Create '+newp.length+' new user account(s) in this group?\n\nEach gets a generated password; you will download the list to give them privately.')) return;
+  if(newp.length&&!await uiConfirm('Create '+newp.length+' new user account(s) in this group?\n\nEach gets a generated password; you will download the list to give them privately.')) return;
   const moving=ADMIN.users.filter(u=>EDIT.members.has(u.email)&&u.group&&(!EDIT.orig||u.group!==EDIT.orig.id));
-  if(moving.length&&!confirm(moving.length+' user(s) will move out of their current group into "'+name+'":\n\n'+moving.slice(0,12).map(u=>u.email).join('\n')+'\n\nContinue?')) return;
+  if(moving.length&&!await uiConfirm(moving.length+' user(s) will move out of their current group into "'+name+'":\n\n'+moving.slice(0,12).map(u=>u.email).join('\n')+'\n\nContinue?')) return;
   if(!ADMIN.groups) ADMIN.groups=[];
   const g=EDIT.orig||{id:'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)};
   g.name=name; g.perms=clonePerms(EDIT.perms); if(!EDIT.orig) ADMIN.groups.push(g);
@@ -1775,11 +1804,11 @@ function renderUsers(){
     '<td class="dbs">'+[['T&amp;D',u.role==='admin'||u.perms.td!==false],['Corr. Actions',u.role==='admin'||!!u.perms.ca],['Go1',u.role==='admin'||u.perms.go1!==false],['Workday',u.role==='admin'||!!u.perms.wd]].map(([n,on])=>'<span class="db'+(on?' on':'')+'">'+n+'</span>').join('')+'</td>'+
     '<td class="act"><button data-e="'+esc(u.email)+'" class="edit">Edit</button><button data-e="'+esc(u.email)+'" class="del">Remove</button></td></tr>').join('');
   $('#uBody').querySelectorAll('.edit').forEach(b=>b.onclick=()=>editUser(b.dataset.e));
-  $('#uBody').querySelectorAll('.del').forEach(b=>b.onclick=()=>{
+  $('#uBody').querySelectorAll('.del').forEach(b=>b.onclick=async ()=>{
     const u=ADMIN.users.find(x=>x.email===b.dataset.e);
-    if(u.role==='admin'&&ADMIN.users.filter(x=>x.role==='admin').length<2){alert('You must keep at least one admin.');return;}
-    if(u.email===SESSION.email){alert('You cannot remove yourself.');return;}
-    if(!confirm('Remove '+u.email+'? They will lose access after you publish.')) return;
+    if(u.role==='admin'&&ADMIN.users.filter(x=>x.role==='admin').length<2){uiAlert('You must keep at least one admin.');return;}
+    if(u.email===SESSION.email){uiAlert('You cannot remove yourself.');return;}
+    if(!await uiConfirm('Remove '+u.email+'? They will lose access after you publish.')) return;
     ADMIN.users=ADMIN.users.filter(x=>x!==u); markDirty(); renderUsers();
   });
 }
@@ -1852,8 +1881,8 @@ $('#bSave').onclick=async()=>{
   const g=ADMIN.groups&&ADMIN.groups.find(x=>x.id===$('#bGroup').value);
   const own={td:$('#bTD').checked,ca:$('#bCA').checked,go1:$('#bGO1').checked};
   if(!g&&!own.td&&!own.ca&&!own.go1){ msg.className='msg bad'; msg.textContent='Tick at least one dashboard, or choose a group.'; return; }
-  if(!g&&(own.td||own.ca)&&!$('#bOwnLoc').checked&&!confirm('These users will see ALL locations in the dashboards ticked. Continue?')) return;
-  if(!confirm('Create '+pick.length+' user account(s)'+(g?' in the group "'+g.name+'"':'')+'?\n\nEach gets a generated password. You will download the list of emails and passwords to give them privately.')) return;
+  if(!g&&(own.td||own.ca)&&!$('#bOwnLoc').checked&&!await uiConfirm('These users will see ALL locations in the dashboards ticked. Continue?')) return;
+  if(!await uiConfirm('Create '+pick.length+' user account(s)'+(g?' in the group "'+g.name+'"':'')+'?\n\nEach gets a generated password. You will download the list of emails and passwords to give them privately.')) return;
   const btn=$('#bSave'); btn.disabled=true; const out=[['Name','Email','Password','Location','Job title']];
   try{
     for(let k=0;k<pick.length;k++){
@@ -1936,7 +1965,7 @@ $('#fSave').onclick=async()=>{
   const pTD=$('#fTD').checked, pCA=$('#fCA').checked, pGO1=$('#fGO1').checked, pWD=$('#fWD').checked;
   const gsel=role!=='admin'&&ADMIN.groups?ADMIN.groups.find(g=>g.id===$('#fGroup').value):null;
   if(!gsel&&role!=='admin'&&!pTD&&!pCA&&!pGO1&&!pWD){err.textContent='Tick at least one dashboard for this user.';return;}
-  if(!gsel&&role!=='admin'&&(pTD||pCA)&&!hasLimits(EDIT.perms)&&!confirm('This viewer has no location/module/program limits and will see ALL data in the dashboards ticked. Continue?')) return;
+  if(!gsel&&role!=='admin'&&(pTD||pCA)&&!hasLimits(EDIT.perms)&&!await uiConfirm('This viewer has no location/module/program limits and will see ALL data in the dashboards ticked. Continue?')) return;
   const btn=$('#fSave'); btn.disabled=true; btn.textContent='Saving…';
   try{
     const u=EDIT.orig||{};
@@ -1960,7 +1989,7 @@ function renderData(){
 }
 $('#dFile').addEventListener('change',async e=>{
   const f=e.target.files[0]; if(!f) return; e.target.value='';
-  if(!/^dashboard_data/i.test(f.name.trim()) && !confirm('"'+f.name+'" does not start with Dashboard_Data.\nLoad it anyway?')){ LOAD_FROM_TOOLBAR=false; return; }
+  if(!/^dashboard_data/i.test(f.name.trim()) && !await uiConfirm('"'+f.name+'" does not start with Dashboard_Data.\nLoad it anyway?')){ LOAD_FROM_TOOLBAR=false; return; }
   const msg=$('#dMsg'); msg.className='msg'; msg.textContent='Reading '+f.name+'…';
   if(LOAD_FROM_TOOLBAR){const bl=document.getElementById('btnLoad'); bl.disabled=true; bl.textContent='Reading…';}
   try{
@@ -1981,7 +2010,7 @@ $('#dFile').addEventListener('change',async e=>{
     renderData(); msg.className='msg ok'; msg.textContent=LAST_REPORT+'\n\nGo to Publish to send it to all users.';
     if(LOAD_FROM_TOOLBAR){ LOAD_FROM_TOOLBAR=false; adm.style.display='flex'; showTab('publish');
       $('#pubState').textContent=LAST_REPORT+'\n\nClick Publish so your users get it.'; }
-  }catch(err){ msg.className='msg bad'; msg.textContent=err.message; if(LOAD_FROM_TOOLBAR){LOAD_FROM_TOOLBAR=false; alert('Could not load that file.\n\n'+err.message);} }
+  }catch(err){ msg.className='msg bad'; msg.textContent=err.message; if(LOAD_FROM_TOOLBAR){LOAD_FROM_TOOLBAR=false; uiAlert('Could not load that file.\n\n'+err.message);} }
   finally{ const bl=document.getElementById('btnLoad'); bl.disabled=false; bl.textContent='⬆ Load new data'; }
 });
 let LAST_REPORT='';
@@ -2006,7 +2035,7 @@ function renderPublish(){
 function plog(s,cls){const l=$('#pLog'); const d=document.createElement('div'); if(cls) d.className=cls; d.textContent=s; l.appendChild(d); l.scrollTop=l.scrollHeight;}
 $('#pBtn').onclick=async()=>{
   const cfg={owner:$('#gOwner').value.trim(),repo:$('#gRepo').value.trim(),branch:$('#gBranch').value.trim()||'main',token:$('#gToken').value.trim()};
-  if(!cfg.token){alert('Paste a GitHub token first.');return;}
+  if(!cfg.token){uiAlert('Paste a GitHub token first.');return;}
   try{ if($('#gRemember').checked) localStorage.setItem('td_gh',JSON.stringify(cfg)); else localStorage.setItem('td_gh',JSON.stringify({...cfg,token:''})); }catch(e){}
   const btn=$('#pBtn'); btn.disabled=true; $('#pLog').innerHTML='';
   try{ await publish(cfg); ADMIN.dirty=false; $('#dirty').style.display='none'; renderPublish(); }
@@ -2401,8 +2430,8 @@ $('#wdRefresh').onclick=()=>wdLoad();
 /* Excel export of the documents currently shown (filters apply). Admins get every tracking column; viewers get
    only their own documents and no status, assignment or timing. Dates are real Excel dates; time taken is in hours. */
 $('#wdExport').onclick=async()=>{
-  const rows=(WD.shown||[]).slice(); if(!rows.length){ alert('There are no documents to export.'); return; }
-  try{ await ensureXLSX(); }catch(e){ alert('Could not load the Excel tool: '+e.message); return; }
+  const rows=(WD.shown||[]).slice(); if(!rows.length){ uiAlert('There are no documents to export.'); return; }
+  try{ await ensureXLSX(); }catch(e){ uiAlert('Could not load the Excel tool: '+e.message); return; }
   const admin=wdIsAdmin(), D=v=>v?new Date(v):null, Dd=v=>v?new Date(v+'T12:00:00'):null;
   const hrs=t=>t.completedAt&&t.assignedAt?Math.round((new Date(t.completedAt)-new Date(t.assignedAt))/36e5*10)/10:null;
   const openHrs=t=>!t.completedAt&&t.assignedAt?Math.round((Date.now()-new Date(t.assignedAt))/36e5*10)/10:null;
@@ -2447,7 +2476,7 @@ function wdPeople(){   // employees from the training data, with manager from th
     return {name,title:p.job||'',loc:p.loc>=0?p.loc:'',emp:p.emp,mgr:i!==undefined?P.mgr[i]:''}; });
 }
 $('#wdNew').onclick=()=>{
-  if(!WD.repo||!WD.repo.token){ alert(ADMIN?'Connect the Workday repository first: Admin → Data → Workday repository.':'Workday is not connected yet. Please ask an admin.'); return; }
+  if(!WD.repo||!WD.repo.token){ uiAlert(ADMIN?'Connect the Workday repository first: Admin → Data → Workday repository.':'Workday is not connected yet. Please ask an admin.'); return; }
   $('#wnAdmin').style.display=wdIsAdmin()?'':'none';
   const people=wdPeople(); WD.newPeople=people;
   $('#wnType').innerHTML=wdTypesFor().map(k=>'<option value="'+k+'">'+WD_TEMPLATES[k].name+'</option>').join('');
@@ -2514,11 +2543,11 @@ function wdBuildForm(t,canEdit){
 async function wdOpen(id){
   let t=WD.tasks.find(x=>x.id===id); if(!t) return;
   if(t.type==='sep'){
-    if(!wdIsAdmin()){ alert('Only HR admins can open separation agreements.'); return; }
-    const L=await wdSepLoad(); if(!L){ alert(WD_SEPT.err); return; }
+    if(!wdIsAdmin()){ uiAlert('Only HR admins can open separation agreements.'); return; }
+    const L=await wdSepLoad(); if(!L){ uiAlert(WD_SEPT.err); return; }
     if(!wdSepTpl(t.f)){ const id2=await wdPickTemplate(null); if(!id2) return;
       const T=L.find(x=>x.id===id2), f={...t.f,tpl:id2}; for(const b of T.blanks) if(b.type==='name'&&!f[b.k]) f[b.k]=t.emp&&t.emp.name||'';
-      try{ await wdSave(Lst=>{ const x=Lst.find(y=>y.id===id); if(x) x.f=f; },'Update task '+id,t.createdBy); }catch(e){ alert(e.message); return; }
+      try{ await wdSave(Lst=>{ const x=Lst.find(y=>y.id===id); if(x) x.f=f; },'Update task '+id,t.createdBy); }catch(e){ uiAlert(e.message); return; }
       t=WD.tasks.find(x=>x.id===id); }
   }
   const admin=wdIsAdmin(), mine=t.createdBy===wdMe(), canEdit=admin||(mine&&t.status!=='Complete');   // viewers edit their own document until HR finalises it
@@ -2562,7 +2591,7 @@ function wdDirty(){ const e=WD.edit; if(!e) return; const t=WD.tasks.find(x=>x.i
   const ch=e.dirty||(wdIsAdmin()&&($('#weStatus').value!==t.status||$('#weWho').value!==(t.assignee||'')||$('#weDue').value!==(t.due||'')));
   $('#weSave').disabled=!ch; $('#weSave').textContent=ch?'Save changes':'Saved'; }
 ['#weStatus','#weWho','#weDue'].forEach(s=>$(s).addEventListener('change',wdDirty));
-function wdClose(){ if(WD.edit&&!$('#weSave').disabled&&$('#weSave').style.display!=='none'&&!confirm('Close without saving your changes?')) return; $('#wdEditor').style.display='none'; WD.edit=null; wdRender(); }
+async function wdClose(){ if(WD.edit&&!$('#weSave').disabled&&$('#weSave').style.display!=='none'&&!await uiConfirm('Close without saving your changes?')) return; $('#wdEditor').style.display='none'; WD.edit=null; wdRender(); }
 $('#weClose').onclick=wdClose;
 function wdApplyEdit(L,me,now){
   const e=WD.edit, t=L.find(x=>x.id===e.id); if(!t) throw new Error('This task was deleted by someone else.');
@@ -2582,23 +2611,23 @@ function wdApplyEdit(L,me,now){
 }
 $('#weSave').onclick=async()=>{
   const e=WD.edit, btn=$('#weSave'), me=wdMe(), now=wdNow();
-  if(wdIsAdmin()&&$('#weStatus').value==='Complete'&&t0status(e.id)!=='Complete'&&!confirm('Mark this document Complete? The time taken will be recorded now.')) return;
+  if(wdIsAdmin()&&$('#weStatus').value==='Complete'&&t0status(e.id)!=='Complete'&&!await uiConfirm('Mark this document Complete? The time taken will be recorded now.')) return;
   btn.disabled=true; btn.textContent='Saving…';
   const granted=false;
   try{ await wdSave(L=>wdApplyEdit(L,me,now),'Update task '+e.id,wdOwner(e.id)); if(granted) setTimeout(()=>toast(wdName($('#weWho').value)+' now has Workday access. Click Publish so they can see this task.'),1600); const t=WD.tasks.find(x=>x.id===e.id); e.dirty=false; wdTimes(t); wdComments(t); wdDirty(); toast('Saved.'); }
-  catch(err){ alert(err.message); wdDirty(); }
+  catch(err){ uiAlert(err.message); wdDirty(); }
 };
 $('#weCAdd').onclick=async()=>{
   const txt=$('#weCText').value.trim(); if(!txt) return;
   const e=WD.edit, me=wdMe(), now=wdNow(), name=SESSION.profile.name||me, btn=$('#weCAdd'); btn.disabled=true;
   try{ await wdSave(L=>{ const t=L.find(x=>x.id===e.id); if(!t) throw new Error('This task was deleted.'); t.comments=(t.comments||[]).concat({by:me,name,at:now,text:txt}); t.updatedAt=now; t.updatedBy=me; },'Comment on '+e.id,wdOwner(e.id));
     $('#weCText').value=''; wdComments(WD.tasks.find(x=>x.id===e.id)); }
-  catch(err){ alert(err.message); } finally{ btn.disabled=false; }
+  catch(err){ uiAlert(err.message); } finally{ btn.disabled=false; }
 };
 $('#weDel').onclick=async()=>{
-  const e=WD.edit; if(!confirm('Delete this task and its document draft? This cannot be undone.')) return;
+  const e=WD.edit; if(!await uiConfirm('Delete this task and its document draft? This cannot be undone.')) return;
   try{ await wdSave(L=>{ const i=L.findIndex(x=>x.id===e.id); if(i>=0) L.splice(i,1); },'Delete task '+e.id,wdOwner(e.id)); $('#wdEditor').style.display='none'; WD.edit=null; wdRender(); }
-  catch(err){ alert(err.message); }
+  catch(err){ uiAlert(err.message); }
 };
 function wdWordify(h){   // Word layout: fixed column widths, lines drawn as cell borders (one per row so Word doesn't merge them)
   const B='solid windowtext 1.0pt', TB='width:100%;border-collapse:collapse;table-layout:fixed';
@@ -2640,12 +2669,12 @@ $('#weWord').onclick=()=>{
 function wdOwner(id){ const t=WD.tasks.find(x=>x.id===id); return t&&t.createdBy||wdMe(); }
 function t0status(id){ const t=WD.tasks.find(x=>x.id===id); return t?t.status:''; }
 /* ---- print ---- */
-$('#wePrint').onclick=()=>{
+$('#wePrint').onclick=async ()=>{
   const e=WD.edit, t0=WD.tasks.find(x=>x.id===e.id); if(!t0) return;
   const t={...t0,f:{...t0.f,...e.f}}, T=WD_TEMPLATES[t.type];
   const done=t0.status==='Complete'&&!e.dirty;
-  if(!done&&!confirm(wdIsAdmin()?'This document is not marked Complete'+(e.dirty?' (or has unsaved changes)':'')+'. Print it as a DRAFT?':'This document has not been finalised by HR yet, so it will print as a DRAFT. Continue?')) return;
-  const w=window.open('','_blank'); if(!w){ alert('Allow pop-ups for this site to print.'); return; }
+  if(!done&&!await uiConfirm(wdIsAdmin()?'This document is not marked Complete'+(e.dirty?' (or has unsaved changes)':'')+'. Print it as a DRAFT?':'This document has not been finalised by HR yet, so it will print as a DRAFT. Continue?')) return;
+  const w=window.open('','_blank'); if(!w){ uiAlert('Allow pop-ups for this site to print.'); return; }
   w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(T.name+' - '+(t.emp&&t.emp.name||''))+'</title><style>'+WD_PRINT_CSS+'</style></head><body>'+(done?'':'<div class="draft">DRAFT</div>')+T.render(t)+'</body></html>');
   w.document.close(); w.focus(); setTimeout(()=>w.print(),300);
 };
@@ -2715,7 +2744,7 @@ function wkDetail(list,show){
 $('#wkSel').onchange=e=>{ WK.week=+e.target.value; WK.pick=null; wkDraw(); };
 $('#wkAll').onchange=()=>{ WK.pick=null; wkDraw(); };
 $('#wkExport').onclick=async()=>{
-  try{ await ensureXLSX(); }catch(e){ alert('Could not load the Excel tool: '+e.message); return; }
+  try{ await ensureXLSX(); }catch(e){ uiAlert('Could not load the Excel tool: '+e.message); return; }
   const {list,all}=wkData(), R=wkRows();
   const sum=[['School (location)',...WK_TYPES,'All actions']].concat(list.map(g=>[g.l<0?BLANK:g.l,...WK_TYPES.map(t=>g.n[t]||0),g.t]));
   const det=[['Employee','Action','Date','School (location)','Job title','Manager','Document']].concat(all.sort((a,b)=>(R.l[a]-R.l[b])||(R.d[a]-R.d[b])).map(i=>[R.e[i],R.t[i],fmtDate(R.d[i]),R.l[i]<0?BLANK:R.l[i],R.j[i]||'',R.m[i]||'',String(R.p[i]||'').split('/').pop()]));
@@ -2784,14 +2813,14 @@ function iapMsg(t,ok){ $('#iMsg').textContent=t; $('#iMsg').className='msg '+(ok
 $('#iSel').onchange=e=>{ iapLoad(e.target.value||null); renderIap(true); };
 $('#iSearch').oninput=iapList; $('#iOnlySel').onchange=iapList; $('#iFree').onchange=iapList;
 $('#iClear').onclick=()=>{ IAP.sel.clear(); iapList(); };
-$('#iSave').onclick=()=>{
+$('#iSave').onclick=async ()=>{
   const name=$('#iName').value.replace(/\s+/g,' ').trim();
   if(!name) return iapMsg('Enter a name for the program, e.g. '+nextIapName()+'.');
   if(PROGRAMS.some(p=>p.name.toLowerCase()===name.toLowerCase()&&p.name!==IAP.cur)) return iapMsg('A program called "'+name+'" already exists. Choose it from the Program list to edit it.');
   if(!IAP.sel.size) return iapMsg('Tick at least one module title for this program.');
   const moves=[...IAP.sel].filter(t=>PMAP[t]&&PMAP[t]!==IAP.cur);
   if(moves.length){ const from=[...new Set(moves.map(t=>PMAP[t]))].join(', ');
-    if(!confirm(moves.length+' module(s) will move out of '+from+' into '+name+':\n\n'+moves.slice(0,12).join('\n')+(moves.length>12?'\n…':'')+'\n\nContinue?')) return; }
+    if(!await uiConfirm(moves.length+' module(s) will move out of '+from+' into '+name+':\n\n'+moves.slice(0,12).join('\n')+(moves.length>12?'\n…':'')+'\n\nContinue?')) return; }
   const list=PROGRAMS.map(p=>({name:p.name,mods:p.mods.filter(t=>!IAP.sel.has(t))})).filter(p=>p.name!==IAP.cur);
   list.push({name,mods:[...IAP.sel]});
   const renames={}; if(IAP.cur&&IAP.cur!==name) renames[IAP.cur]=name;
@@ -2800,14 +2829,14 @@ $('#iSave').onclick=()=>{
   iapMsg((was===null?'Created ':'Saved ')+name+' with '+IAP.sel.size+' module(s).'+(renames[was]&&nUsers?' '+nUsers+' user(s) who had "'+was+'" now have "'+name+'".':'')+
     (emptied.length?'\nNote: '+emptied.join(', ')+' now has no modules.':'')+'\nClick Publish to send this to everyone.',true);
 };
-$('#iDel').onclick=()=>{
+$('#iDel').onclick=async ()=>{
   if(IAP.cur===null) return; const name=IAP.cur;
   const users=ADMIN.users.filter(u=>u.perms&&u.perms.progs&&u.perms.progs.includes(name)).length;
-  if(!confirm('Delete the program "'+name+'"? Its modules will no longer have a program'+(users?' and it will be removed from '+users+' user(s) permissions':'')+'.')) return;
+  if(!await uiConfirm('Delete the program "'+name+'"? Its modules will no longer have a program'+(users?' and it will be removed from '+users+' user(s) permissions':'')+'.')) return;
   iapApply(PROGRAMS.filter(p=>p.name!==name),{},[name]); IAP.cur=null; renderIap(); iapMsg('Deleted '+name+'. Click Publish to send this to everyone.',true);
 };
-$('#iReset').onclick=()=>{
-  if(!confirm('Replace all programs with the original IAP-2023, IAP-2024, IAP-2025 and Nursing Orientation lists from the Power BI report?')) return;
+$('#iReset').onclick=async ()=>{
+  if(!await uiConfirm('Replace all programs with the original IAP-2023, IAP-2024, IAP-2025 and Nursing Orientation lists from the Power BI report?')) return;
   const keep=new Set(defaultPrograms().map(p=>p.name)); const removed=PROGRAMS.map(p=>p.name).filter(n=>!keep.has(n));
   iapApply(null,{},removed); IAP.cur=null; renderIap(); iapMsg('Original programs restored. Click Publish to send this to everyone.',true);
 };
@@ -2877,7 +2906,7 @@ let toastT=null;
 function toast(msg,bad){const t=document.getElementById('toast');t.textContent=msg;t.className=bad?'bad':'';t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',3500);}
 async function refreshData(){
   if(!SESSION) return;
-  if(ADMIN&&ADMIN.dirty&&!confirm('You have unpublished changes. Refreshing will discard them. Continue?')) return;
+  if(ADMIN&&ADMIN.dirty&&!await uiConfirm('You have unpublished changes. Refreshing will discard them. Continue?')) return;
   const btn=document.getElementById('btnRefresh'); btn.disabled=true; btn.classList.add('spin');
   try{
     if(await checkAppVersion()) return;
@@ -3320,7 +3349,7 @@ function caMonth(agg){
   box.innerHTML=svg+'</svg>';
 }
 async function caExport(){
-  const G=CA.groups||[]; if(!G.length){ alert('There are no rows to export.'); return; }
+  const G=CA.groups||[]; if(!G.length){ uiAlert('There are no rows to export.'); return; }
   const btn=caBtns.querySelector('.caexport'); btn.disabled=true; btn.textContent='Preparing…';
   try{
     await ensureXLSX();
@@ -3331,7 +3360,7 @@ async function caExport(){
     const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Corrective Actions');
     const f=S2.dFrom!==null?isoDate(S2.dFrom):'all', tt=S2.dTo!==null?isoDate(S2.dTo):'today';
     XLSX.writeFile(wb,'Corrective_Actions_'+f+'_to_'+tt+'.xlsx');
-  }catch(e){ alert('Could not create the Excel file: '+e.message); }
+  }catch(e){ uiAlert('Could not create the Excel file: '+e.message); }
   finally{ btn.disabled=false; btn.textContent='Export'; }
 }
 function caTable(groups){
@@ -3391,9 +3420,9 @@ function showView(v){
   if(v==='ca') caUpdate();
   try{sessionStorage.setItem('td_view',v);}catch(e){}
 }
-function onDashChange(e){
+async function onDashChange(e){
   const v=e.target.value;
-  if(v.startsWith('url:')){ if(ADMIN&&ADMIN.dirty&&!confirm('You have unpublished changes. Leave this dashboard?')){renderDashSelects();return;} location.href=v.slice(4); return; }
+  if(v.startsWith('url:')){ if(ADMIN&&ADMIN.dirty&&!await uiConfirm('You have unpublished changes. Leave this dashboard?')){renderDashSelects();return;} location.href=v.slice(4); return; }
   showView(v);
 }
 document.querySelectorAll('#dashSel, .dashSel').forEach(s=>{ const c=s.cloneNode(false); s.replaceWith(c); c.addEventListener('change',onDashChange); });
@@ -3422,7 +3451,7 @@ function caFolderSummary(){
   const rows=caDerive(d,ADMIN.people);
   el.innerHTML=per+'<div class="kv"><span>Corrective actions</span><b>'+nf.format(rows.e.length)+' for '+nf.format(new Set(rows.e).size)+' employees</b></div>'+
     (ADMIN.people?'':'<div class="msg bad">Load the training export once (⬆ Load new data) so employees can be matched to their manager and location.</div>');
-  el.querySelectorAll('.caRm').forEach(b=>b.onclick=()=>{ const i=+b.dataset.i; if(!confirm('Remove the folder "'+d.roots[i]+'" from the Corrective Actions data?')) return; caRemoveRoot(i); });
+  el.querySelectorAll('.caRm').forEach(b=>b.onclick=async ()=>{ const i=+b.dataset.i; if(!await uiConfirm('Remove the folder "'+d.roots[i]+'" from the Corrective Actions data?')) return; caRemoveRoot(i); });
 }
 function caRemoveRoot(i){
   const d=ADMIN.caDocs, out={roots:d.roots.filter((_,k)=>k!==i),f:[],n:[],m:[],r:[]};
@@ -3432,7 +3461,7 @@ function caRemoveRoot(i){
 function caLoadFolder(files){
   if(!files||!files.length) return;
   const list=[...files].filter(f=>f.webkitRelativePath);
-  if(!list.length){ alert('Please choose a folder (not individual files).'); return; }
+  if(!list.length){ uiAlert('Please choose a folder (not individual files).'); return; }
   const root=list[0].webkitRelativePath.split('/')[0];
   const d=ADMIN.caDocs&&ADMIN.caDocs.roots?ADMIN.caDocs:{roots:[],f:[],n:[],m:[],r:[]};
   // Replace only what this folder covers: a top-level folder with the same name, or a sub-folder with this name inside another folder.
@@ -3638,7 +3667,7 @@ function shareParams(to,d){
           subject:'Your link to the '+D.name,message:($('#shMsg').value.includes(D.url)?$('#shMsg').value:$('#shMsg').value+'\n\nLink: '+D.url),sent_by:SESSION.email};
 }
 document.querySelectorAll('.shbtn').forEach(b=>b.addEventListener('click',()=>openShare(b.dataset.d)));
-$('#shDash').addEventListener('change',e=>{ const edited=$('#shMsg').value!==shareText(SHARE_CUR); if(edited&&!confirm('Switching dashboards will replace the message text with the standard message for that dashboard. Continue?')){ e.target.value=SHARE_CUR; return; } setShareDash(e.target.value); });
+$('#shDash').addEventListener('change',async e=>{ const edited=$('#shMsg').value!==shareText(SHARE_CUR); if(edited&&!await uiConfirm('Switching dashboards will replace the message text with the standard message for that dashboard. Continue?')){ e.target.value=SHARE_CUR; return; } setShareDash(e.target.value); });
 $('#shClose').onclick=()=>{ $('#shareModal').style.display='none'; };
 $('#shareModal').addEventListener('click',e=>{ if(e.target.id==='shareModal') $('#shClose').click(); });
 $('#shCopy').onclick=async()=>{ try{ await navigator.clipboard.writeText($('#shLink').value); $('#shCopy').textContent='Copied'; setTimeout(()=>$('#shCopy').textContent='Copy',1500);}catch(e){ $('#shLink').select(); } };
@@ -3666,7 +3695,7 @@ $('#mSave').onclick=()=>{
   if(/^(github_pat_|ghp_|gho_|ghs_)/.test(m.priv)||/^(github_pat_|ghp_)/.test(m.pub)){ msg.className='msg bad'; msg.textContent='That looks like a GitHub token, not an EmailJS key. Clear the box and paste the EmailJS Private Key (Account → General).'; return; }
   ADMIN.mail=m; markDirty(); renderMailState(); msg.className='msg ok'; msg.textContent='Saved. Click Publish so the settings are kept for next time and for other admins.';
 };
-$('#mClear').onclick=()=>{ if(!confirm('Remove the email sending settings?')) return; ADMIN.mail=null; ['#mSvc','#mTpl','#mPub','#mPriv'].forEach(s=>$(s).value=''); markDirty(); renderMailState(); $('#mMsg').textContent=''; };
+$('#mClear').onclick=async ()=>{ if(!await uiConfirm('Remove the email sending settings?')) return; ADMIN.mail=null; ['#mSvc','#mTpl','#mPub','#mPriv'].forEach(s=>$(s).value=''); markDirty(); renderMailState(); $('#mMsg').textContent=''; };
 $('#mTest').onclick=async()=>{
   const msg=$('#mMsg'); const m={svc:$('#mSvc').value.trim(),tpl:$('#mTpl').value.trim(),pub:$('#mPub').value.trim(),priv:$('#mPriv').value.trim()};
   if(!m.svc||!m.tpl||!m.pub){ msg.className='msg bad'; msg.textContent='Fill in Service ID, Template ID and Public key first.'; return; }
@@ -3766,7 +3795,7 @@ $('#rSave').onclick=async()=>{
   try{ await testDocRepo(r); ADMIN.docRepo=r; CA.repo=r; markDirty(); renderDocRepo(); m.className='msg ok'; m.textContent='Connected to the private repository. Click Publish so users with Corrective Actions access get it.'; }
   catch(err){ m.className='msg bad'; m.textContent=err.message; }
 };
-$('#rClear').onclick=()=>{ if(!confirm('Disconnect the documents repository? Users will no longer be able to open documents after you publish.')) return; ADMIN.docRepo=null; CA.repo=null; markDirty(); renderDocRepo(); $('#rMsg').textContent=''; };
+$('#rClear').onclick=async ()=>{ if(!await uiConfirm('Disconnect the documents repository? Users will no longer be able to open documents after you publish.')) return; ADMIN.docRepo=null; CA.repo=null; markDirty(); renderDocRepo(); $('#rMsg').textContent=''; };
 
 /* Admin: Workday repository settings */
 function renderWdRepo(){
@@ -3786,10 +3815,10 @@ $('#wSave').onclick=async()=>{
     ADMIN.wdRepo=r; WD.repo=r; WD.loaded=false; wdEnsureKeys(); markDirty(); renderWdRepo(); m.className='msg ok'; m.textContent='Connected. Click Publish so Workday users get it.';
   }catch(err){ m.className='msg bad'; m.textContent=err.message; }
 };
-$('#wClear').onclick=()=>{ if(!confirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
+$('#wClear').onclick=async ()=>{ if(!await uiConfirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-15.2';
+const APP_VERSION='2026-11-15.3';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
