@@ -364,6 +364,8 @@
   .wdbar #wdRefresh{font-size:15px;padding:5px 10px;border:1px solid #C5D0E0;border-radius:6px;background:#fff;cursor:pointer}
   .wdprimary{font:inherit;font-weight:800;font-size:13.5px;padding:9px 14px;border:none;border-radius:6px;background:#1E8E3E;color:#fff;cursor:pointer}
   .wdprimary:hover{background:#146C2E}
+  .wdxls{font:inherit;font-size:13px;font-weight:700;padding:7px 12px;border:1px solid #1D6F42;border-radius:6px;background:#1D6F42;color:#fff;cursor:pointer}
+  .wdxls:hover{background:#155232}
   .wdsp{flex:1}
   #wdStats{display:flex;gap:8px}
   .wdstat{display:flex;flex-direction:column;align-items:flex-start;min-width:92px;padding:4px 10px;border:1px solid #DCE3EE;border-left:4px solid var(--c,#1F4E8C);border-radius:6px;background:#fff;font:inherit;cursor:pointer;text-align:left}
@@ -527,6 +529,7 @@
     <span id="wdWhoWrap"><select id="wdWho"></select></span>
     <input id="wdQ" placeholder="Search employee, document, person">
     <button id="wdRefresh" title="Load the latest tasks">⟳</button>
+    <button id="wdExport" class="wdxls" title="Download the documents shown below as an Excel file">⬇ Excel</button>
     <span id="wdNote" class="sub"></span>
   </div>
   <div id="wdBody"></div>
@@ -2355,6 +2358,7 @@ function wdRender(){
   const rows=all.filter(t=>(!admin||!f.st||t.status===f.st)&&(!f.type||t.type===f.type)&&(!f.who||(f.who==='__none'?!t.assignee:t.assignee===f.who))&&
     (!q||[t.emp&&t.emp.name,WD_TEMPLATES[t.type]&&WD_TEMPLATES[t.type].name,admin?wdName(t.assignee):'',t.emp&&t.emp.loc].join(' ').toLowerCase().includes(q)))
     .sort((a,b)=>(WD_STATUSES.indexOf(a.status)===2)-(WD_STATUSES.indexOf(b.status)===2)||String(b.assignedAt||b.createdAt).localeCompare(String(a.assignedAt||a.createdAt)));
+  WD.shown=rows;
   if(!admin){
     body.innerHTML=rows.length?'<table class="wdtbl"><thead><tr><th>Employee</th><th>Document</th><th class="c">Loc</th><th>Created</th><th>Last changed</th><th class="c" title="Comments">💬</th><th></th></tr></thead><tbody>'+
       rows.map(t=>'<tr data-id="'+esc(t.id)+'"><td><b>'+esc(t.emp&&t.emp.name||'')+'</b><div class="sub">'+esc(t.emp&&t.emp.title||'')+'</div></td><td>'+esc(WD_TEMPLATES[t.type]?WD_TEMPLATES[t.type].name:t.type)+'</td><td class="c">'+esc(t.emp&&t.emp.loc!=null?t.emp.loc:'')+'</td>'+
@@ -2394,6 +2398,37 @@ const WD_ADMIN_ONLY=new Set(['sep','inv']);   // separation agreements and inves
 function wdTypesFor(){ return WD_TYPE_ORDER.filter(k=>wdIsAdmin()||!WD_ADMIN_ONLY.has(k)); }
 function wdRepoFor(){ return ADMIN?ADMIN.wdRepo||null:(SESSION&&SESSION.wd&&SESSION.wd.repo)||null; }
 $('#wdRefresh').onclick=()=>wdLoad();
+/* Excel export of the documents currently shown (filters apply). Admins get every tracking column; viewers get
+   only their own documents and no status, assignment or timing. Dates are real Excel dates; time taken is in hours. */
+$('#wdExport').onclick=async()=>{
+  const rows=(WD.shown||[]).slice(); if(!rows.length){ alert('There are no documents to export.'); return; }
+  try{ await ensureXLSX(); }catch(e){ alert('Could not load the Excel tool: '+e.message); return; }
+  const admin=wdIsAdmin(), D=v=>v?new Date(v):null, Dd=v=>v?new Date(v+'T12:00:00'):null;
+  const hrs=t=>t.completedAt&&t.assignedAt?Math.round((new Date(t.completedAt)-new Date(t.assignedAt))/36e5*10)/10:null;
+  const openHrs=t=>!t.completedAt&&t.assignedAt?Math.round((Date.now()-new Date(t.assignedAt))/36e5*10)/10:null;
+  const docName=t=>(WD_TEMPLATES[t.type]?WD_TEMPLATES[t.type].name:t.type);
+  const tplName=t=>t.type==='sep'&&t.f&&t.f.tpl?((WD_SEPT.list||[]).find(x=>x.id===t.f.tpl)||{name:t.f.tpl}).name:'';
+  const lastC=t=>{ const c=(t.comments||[]).slice(-1)[0]; return c?(c.name||c.by)+': '+c.text:''; };
+  const H=admin?['Employee','Job title','Location','Document','Template','Created','Created by','Assigned to','Assigned','Due','Status','Started','Completed','Time taken (hours)','Open for (hours)','Time taken','Comments','Last comment','Last changed','Task ID']
+               :['Employee','Job title','Location','Document','Created','Last changed','Comments','Last comment'];
+  const data=rows.map(t=>admin?[t.emp&&t.emp.name||'',t.emp&&t.emp.title||'',t.emp&&t.emp.loc!=null&&t.emp.loc!==''?t.emp.loc:'',docName(t),tplName(t),D(t.createdAt),wdName(t.createdBy),t.assignee?wdName(t.assignee):'',D(t.assignedAt),Dd(t.due),t.status,D(t.startedAt),D(t.completedAt),hrs(t),openHrs(t),t.completedAt?wdTaken(t):'',(t.comments||[]).length,lastC(t),D(t.updatedAt),t.id]
+                              :[t.emp&&t.emp.name||'',t.emp&&t.emp.title||'',t.emp&&t.emp.loc!=null&&t.emp.loc!==''?t.emp.loc:'',docName(t),D(t.createdAt),D(t.updatedAt),(t.comments||[]).length,lastC(t)]);
+  const ws=XLSX.utils.aoa_to_sheet([H,...data],{cellDates:true,dateNF:'m/d/yyyy h:mm AM/PM'});
+  // date-only columns (due) show without time
+  const dueCol=H.indexOf('Due'); if(dueCol>=0) for(let r=1;r<=data.length;r++){ const c=ws[XLSX.utils.encode_cell({r,c:dueCol})]; if(c&&c.t==='d') c.z='m/d/yyyy'; }
+  ws['!cols']=H.map(h=>({wch:/Employee|Job title|Assigned to|Created by|Template|Document/.test(h)?24:/Last comment/.test(h)?50:/Created|Assigned$|Started|Completed|Last changed/.test(h)?19:/hours/.test(h)?12:12}));
+  ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:data.length,c:H.length-1}})};
+  ws['!freeze']={xSplit:1,ySplit:1}; ws['!views']=[{state:'frozen',xSplit:1,ySplit:1}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Documents');
+  if(admin){   // a small summary sheet for quick reporting
+    const by=(f)=>{ const m=new Map(); for(const t of rows){ const k=f(t)||'(none)'; m.set(k,(m.get(k)||0)+1); } return [...m].sort((a,b)=>b[1]-a[1]); };
+    const done=rows.filter(t=>hrs(t)!=null), avg=done.length?Math.round(done.reduce((a,t)=>a+hrs(t),0)/done.length*10)/10:'';
+    const S=[['Workday summary','Exported '+new Date().toLocaleString('en-US')],[],['Documents',rows.length],['Average time to complete (hours)',avg],[],['By status','Count'],...WD_STATUSES.map(st=>[st,rows.filter(t=>t.status===st).length]),[],
+      ['By document','Count'],...by(docName),[],['By assigned to','Count'],...by(t=>t.assignee?wdName(t.assignee):'Not assigned'),[],['By location','Count'],...by(t=>t.emp&&t.emp.loc!=null&&t.emp.loc!==''?'Location '+t.emp.loc:'')];
+    const ws2=XLSX.utils.aoa_to_sheet(S); ws2['!cols']=[{wch:34},{wch:26}]; XLSX.utils.book_append_sheet(wb,ws2,'Summary');
+  }
+  XLSX.writeFile(wb,'Workday_documents_'+new Date().toISOString().slice(0,10)+'.xlsx');
+};
 $('#wdQ').oninput=e=>{ WD.filt.q=e.target.value; wdRender(); };
 $('#wdWho').onchange=e=>{ WD.filt.who=e.target.value; wdRender(); };
 $('#wdType').onchange=e=>{ WD.filt.type=e.target.value; wdRender(); };
@@ -3754,7 +3789,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=()=>{ if(!confirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-15.1';
+const APP_VERSION='2026-11-15.2';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
