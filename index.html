@@ -411,6 +411,13 @@
   .wdform{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
   .wdform label.wide{grid-column:1/-1}
   .wdform em{font-style:normal;font-weight:500;font-size:11.5px;color:#5A6478}
+  .tplist{flex:1;min-height:0;overflow:auto;border:1px solid #DCE3EE;border-radius:8px}
+  .tpg{position:sticky;top:0;background:#14284B;color:#fff;font-size:11.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:5px 10px}
+  .tpi{display:flex;flex-direction:column;align-items:flex-start;width:100%;border:none;border-bottom:1px solid #EDF1F7;background:#fff;padding:8px 12px;font:inherit;text-align:left;cursor:pointer}
+  .tpi b{font-size:13.5px;color:#14284B}.tpi span{font-size:11.5px;color:#5A6478}
+  .tpi:hover{background:#EEF4FF}.tpi.on{background:#E7F5EC}
+  .wdtplbar{grid-column:1/-1;display:flex;align-items:center;gap:10px;background:#EEF4FF;border:1px solid #C5D0E0;border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:13px}
+  .wdtplbar b{color:#14284B}.wdtplbar button{margin-left:auto;font:inherit;font-size:12px;font-weight:700;padding:4px 10px;border:1px solid #1F4E8C;border-radius:5px;background:#fff;color:#1F4E8C;cursor:pointer}
   .wdchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
   .wdchips button{font:inherit;font-size:11.5px;font-weight:700;padding:3px 9px;border:1px solid #1F4E8C;border-radius:12px;background:#EEF4FF;color:#1F4E8C;cursor:pointer}
   .wdchips button:hover{background:#1F4E8C;color:#fff}
@@ -535,6 +542,16 @@
     <div id="wnMsg" class="msg"></div>
   </div>
   <div class="ffoot"><button id="wnCancel">Cancel</button><button id="wnSave" class="primary">Create</button></div>
+</div></div>
+<!-- Workday: separation agreement template picker -->
+<div id="wdTplPick" class="wdmodal" style="display:none;z-index:261000"><div class="fcard" style="width:min(760px,96vw);max-height:90vh;display:flex;flex-direction:column">
+  <div class="fhead">Choose the separation agreement template</div>
+  <div class="fbody" style="flex:1;min-height:0;display:flex;flex-direction:column">
+    <input id="tpQ" placeholder="Search templates (e.g. Over 40, COBRA, Layoff, Retention)" style="margin-bottom:8px">
+    <div id="tpList" class="tplist"></div>
+    <p class="pnote" style="margin:8px 0 0">These are the templates in the OneDrive folder "Separation Agreement Templates". Changes to that folder appear here after the next sync.</p>
+  </div>
+  <div class="ffoot"><button id="tpCancel">Cancel</button></div>
 </div></div>
 <!-- Workday: task editor -->
 <div id="wdEditor" class="wdmodal" style="display:none"><div class="fcard wdcard">
@@ -2045,16 +2062,8 @@ const WD_TEMPLATES={
     render:t=>wdEsp(t)
   },
   sep:{
-    name:'Separation Agreement',
-    fields:[
-      {k:'toName',label:'Employee name'},
-      {k:'age',label:'Employee age group',type:'select',opts:['40 or over','Under 40'],def:'40 or over',hint:'40 or over gets 21 days to consider (OWBPA); under 40 gets 14 days.'},
-      {k:'termDate',label:'Termination effective date',type:'date'},
-      {k:'severance',label:'Severance amount ($)',hint:'e.g. 9,267.20'},
-      {k:'cobraDate',label:'COBRA coverage effective date',type:'date'},
-      {k:'property',label:'Company property the employee may keep (optional)',hint:'e.g. the Company laptop and camera — leave blank if none'},
-      {k:'date',label:'Date prepared',type:'date'}],
-    render:t=>wdSep(t)
+    name:'Separation Agreement', fields:[],
+    fieldsFor:e=>wdSepFields(e), render:t=>wdSepRender(t)   // templates come from the private repository
   }
 };
 WD_TEMPLATES.inv={
@@ -2127,43 +2136,60 @@ function wdEsp(t){
     '<p>Improvement must occur immediately and must be sustained. If at any time during the specified time frame you fail to make the appropriate effort necessary to reach the goals set forth in this ESP, disciplinary action up to and including separation from the company may occur. A decrease in performance after successfully completing the Employee Success Plan may result in being dismissed without the issuance of another warning or ESP.</p>'+
     '<p>Failure to improve your performance to the levels included in this ESP will result in further disciplinary action, up to and including termination of your employment.</p>'+wdSign(t);
 }
-function wdSep(t){
-  const over=wdV(t,'age')!=='Under 40', days=over?'twenty-one (21)':'fourteen (14)', dn=over?'21':'14';
-  const prop=wdV(t,'property');
-  const nd=over?"Nothing in this agreement prevents Employee from reporting any activity to any governmental authorities, including the SEC or EEOC, or participating in any whistleblower program.  However, Employee agrees not to make statements about the Company which are maliciously untrue, such that they are made with knowledge of their falsity or with reckless disregard to their truth or falsity."
-    :"Nothing in this agreement prevents Employee from reporting any activity to any governmental authorities, including the SEC or EEOC, or participating in any whistleblower program.  However, Employee agrees to refrain from making statements about the Company that are disparaging, demeaning or defamatory and which are maliciously untrue, such that they are made with knowledge of their falsity or with reckless disregard to their truth or falsity.  This includes, but is not limited to, communications on social media websites such as Facebook, X, LinkedIn, Instagram, or Glassdoor, on blogs, by text or email or other electronic means.";
-  const P=(n,h,body)=>'<p class="num"><b>'+n+'.&nbsp; '+h+':</b>&nbsp; '+body+'</p>';
-  return '<h1>Separation and Release Agreement</h1>'+
-  '<p class="ind">THIS SEPARATION AND RELEASE AGREEMENT ("Agreement") is made between '+wdBlank(wdV(t,'toName'),180)+' ("Employee" or "you") and Lincoln Technical Institute, Inc., and/or its subsidiaries ("Employer") and is in consideration of their mutual undertakings as set forth in this Agreement.</p>'+
-  '<p class="ind">Employee\'s employment with Employer was terminated.  In order to assist you in your transition to new employment and to mitigate financial hardship, Employer has decided to offer you severance pay set forth below at Paragraph 3, to which you are not otherwise entitled.  The purpose of this Agreement is to clearly set forth the terms and conditions of your departure.  Therefore, the parties agree as follows:</p>'+
-  P(1,'Nonadmission of Liability','This Agreement shall not be construed as an admission by Employer that it acted wrongfully or unlawfully with respect to your employment or your termination of employment.  Additionally, this Agreement shall not be construed as an admission by Employee of any misconduct.')+
-  P(2,'Termination of Employment','Your employment with Employer was terminated effective '+wdD(wdV(t,'termDate'))+'.')+
-  P(3,'Severance Pay','Employer will pay you $'+wdBlank(wdV(t,'severance').replace(/^\$/,''),80)+' less all lawful or required deductions as severance pay. The payment will be made in a lump sum, by corporate check made payable to you within 14 days after execution of this Agreement or 14 days after the effective termination date as stated above, whichever is later, but no earlier than 8 days after Employee signs this Agreement.  Should Employer rehire Employee, Employee may be required to repay some or all of Employee\'s severance pay in accordance with the Severance and Retention Pay policy 1-08.')+
-  P(4,'Benefits Continuation','If applicable, effective '+wdD(wdV(t,'cobraDate'))+', you and/or your covered spouse and dependents (if any) may elect a temporary extension of medical, dental and vision plan coverage at group rates (called "COBRA continuation coverage").  Employer will provide you and/or your covered spouse with a separate notice summarizing the COBRA continuation coverage rights and obligations, as well as an election form.')+
-  P(5,'Accrued, Unused Vacation','Employer will provide you with payment for all accrued, unused vacation on your next regularly scheduled paycheck, which shall be subject to all lawful or required deductions.')+
-  P(6,'No Other Compensation','You acknowledge that, other than your accrued, unused vacation to which Employer has agreed to pay, you have been paid all other compensation or benefits which were owed by Employer, and that Employer is not obligated to pay or provide you with any further compensation or benefits of any nature.')+
-  P(7,'Unemployment Compensation','If you file for unemployment compensation benefits, Employer will not contest your eligibility for unemployment compensation, but if in its good faith view it is required to provide information regarding any claim from unemployment compensation benefits, it will provide truthful and accurate information.')+
-  P(8,'References','All requests for references will be routed to Employer\'s Corporate Human Resources department or its designee.  Employer\'s response shall be limited to the dates of your employment and your job title.  No additional information will be released.')+
-  P(9,'Release of Claims','In exchange for the severance pay, which you are not otherwise entitled to receive, you and your successors and assigns forever release and discharge Employer, any of Employer\'s parent, subsidiary or related companies, any Employer-sponsored employee benefit plans in which you participate, and all of their respective officers, directors, trustees, shareholders, agents, employees, employees\' spouses, and all of their successors and assigns (collectively "Releasees") from any and all claims, actions, causes of action, rights, or damages related in any way to your employment by Employer, including costs and attorneys\' fees (collectively "Claims") whether known, unknown, or later discovered, arising from any acts or omissions that occurred prior to the date you sign this Agreement.')+
-  '<p class="ind">Without limiting the scope of the foregoing provision in any way, you specifically release all claims relating to or arising out of any aspect of your employment with Lincoln Technical Institute, Inc., and/or its subsidiaries or related entities, including but not limited to, all claims under Title VII of the Civil Rights Act of 1964, the Civil Rights Act of 1991 and the laws amended thereby; the Employee Retirement Income Security Act of 1974, as amended; the Age Discrimination in Employment Act of 1967; The Older Workers Benefit Protection Act of 1990; the Americans with Disabilities Act; the Family and Medical Leave Act of 1993; the Fair Labor Standards Act of 1963; any federal, state or local laws against discrimination or harassment or retaliation; any federal or state whistleblower law; any contract of employment, express or implied; any provision of the Constitution of the United States or of any particular State; and any other law, common or statutory, of the United States, or any particular State; any claim for the negligent and/or intentional infliction of emotional distress or specific intent to harm; any claims for attorneys fees, costs and/or expenses; any claims for unpaid or withheld wages, severance pay, including all claims for severance under the Company\'s Severance and Retention Pay policy 1-08, benefits, bonuses, commissions and/or other compensation of any kind; and/or any other federal, state or local human rights, civil rights, wage and hour, wage payment, pension or labor laws, rules and/or regulations; all claims growing out of any legal restrictions on Lincoln Technical Institute, Inc., and/or its subsidiaries\' right to hire and/or terminate its employees, including all claims that were asserted and/or that could have been asserted by you and all claims for breach of promise, public policy, negligence, retaliation, defamation, impairment of economic opportunity, loss of business opportunity, fraud, misrepresentation, etc.</p>'+
-  '<p class="ind">This release does not apply to claims that may arise after the date this Agreement is executed; to statutory claims for state unemployment insurance, worker\'s compensation, disability insurance benefits (other than discrimination claims for such benefits); or to any other claims that cannot be waived herein under state or federal law.</p>'+
-  P(10,'No Claims','You represent that you have not filed any Claim against Employer or Releasees, that you will not cooperate or assist with any other person or entity in filing any Claim against Employer or Releasees, and that you will not do so at any time in the future concerning Claims released in this Agreement; provided, however, that this will not limit you from filing an action to enforce the terms of this Agreement.')+
-  P(11,'No Representations','You acknowledge that, except as expressly set forth herein, no representations of any kind or character have been made to you by Employer or by any of its agents, representatives, or attorneys to induce the execution of this Agreement.')+
-  P(12,'Voluntary Execution of Agreement','You acknowledge that you have carefully read and fully understand all of the provisions of this Agreement, that you understand the significance and consequences of this Agreement, that it is voluntary, that it has not been entered into as a result of any coercion, duress or undue influence, and expressly confirm that it is to be given full force and effect according to all of its terms, including those relating to unknown Claims.  You acknowledge that you had full opportunity to discuss any and all aspects of this Agreement with legal counsel, and have availed yourself of that opportunity to the extent desired.  You acknowledge that you have carefully read and fully understand all of the provisions of this Agreement and have signed this Agreement only after full reflection and analysis.')+
-  P(13,'Consideration Period','You acknowledge that you had full opportunity to discuss any and all aspects of this Agreement with legal counsel, that you have had '+days+' days to consult with counsel to consider whether to sign, or if you chose to forego legal counsel, you did so freely and knowingly.')+
-  P(14,'Revocation Period','You acknowledge that you will have seven (7) days after you sign this Agreement to revoke your acceptance of this Agreement, and that this Agreement will not become effective until this seven (7) day period has expired.  Notice of revocation of this Agreement can be made by delivering written notice to Employer\'s SVP, Chief Human Resources Officer: 14 Sylvan Way, Suite A, Parsippany, NJ 07054.')+
-  P(15,'Return of Property','You acknowledge that you have returned to Employer all company-owned property in your possession'+(prop?' except for '+esc(prop)+' which you may retain':'')+', specifically including all keys and keycard badges, all company-owned equipment, and all company documents, and computer-stored or transmitted information, specifically including all trade secrets, and/or confidential company information.')+
-  P(16,'Severability','If any provision or any portion or any provision of this Agreement becomes or is declared by a court of competent jurisdiction to be illegal, invalid or unenforceable, the remaining provisions of this Agreement shall continue in full force and effect.')+
-  P(17,'Non-Disparagement',nd)+
-  P(18,'Confidentiality','Employee shall not disseminate the financial terms of this Agreement to any person or entity not a party to this Agreement, except (a) by written agreement of the parties, (b) pursuant to a valid court order or subpoena, (c) as required by law, or (d) as otherwise provided in this section.  Employee may disclose the terms of this Agreement to Employee\'s attorneys, financial advisors and/or immediate family, provided Employee first advises them that the financial terms must not be further disclosed.')+
-  P(19,'Binding Effect; Successors','This Agreement is binding upon and shall inure to the benefit of anyone who succeeds to the rights, interests or responsibilities of the Parties.  Employee makes the releases contained in this Agreement for the benefit of the Employer and all who succeed to its rights, interests or responsibilities.')+
-  P(20,'Entire Agreement','This Agreement sets forth the entire understanding between the parties in connection with its subject matter and supersedes all prior written or oral agreements or understandings concerning the subject matter of this Agreement. You acknowledge that in signing this Agreement, you have not relied upon any representation or statement not set forth in this Agreement made by Employer or any of its representatives.')+
-  P(21,'Governing Law','This Agreement shall be governed by and construed in accordance with the laws of the state of New Jersey, without reference to its conflict of laws principles.  Any action regarding the enforcement or interpretation of this Agreement shall be commenced only in the state of New Jersey.')+
-  '<h2 style="text-align:center">Acknowledgment</h2>'+
-  '<p>By signing this Agreement, I acknowledge that: (a) I have read and fully understand this Agreement; (b) this Agreement was available to me for my review for '+dn+' days; (c) I had the opportunity to consult with legal counsel regarding this Agreement and my rights upon execution; (d) I have signed this Agreement knowingly and voluntarily and without any duress or undue influence on the part or behalf of the Employer, and (e) this Agreement shall not become effective or enforceable for a period of seven (7) days following its execution.</p>'+
-  '<table class="sig"><tr><td class="sl"></td><td class="gap"></td><td class="sd"></td></tr><tr><td>Employee\'s Signature'+(wdV(t,'toName')?' — '+esc(wdV(t,'toName')):'')+'</td><td></td><td>Date</td></tr>'+
-  '<tr class="sp"><td colspan="3">Lincoln Technical Institute, Inc., and/or its subsidiaries</td></tr><tr><td class="sl"></td><td class="gap"></td><td class="sd"></td></tr><tr><td>SVP, Chief Human Resources Officer</td><td></td><td>Date</td></tr></table>';
+/* ---- Separation agreements: one of the templates in OneDrive "Separation Agreement Templates" ----
+   Synced to the private documents repository; a GitHub job turns them into _templates/separation-templates.json
+   (each "____" blank becomes a fill-in). Only admins can open them (documents read key). */
+let WD_SEPT={list:null,err:'',loading:null};
+async function wdSepLoad(){
+  if(WD_SEPT.list) return WD_SEPT.list;
+  if(WD_SEPT.loading) return WD_SEPT.loading;
+  const R=ADMIN&&ADMIN.docRepo;
+  if(!R||!R.token){ WD_SEPT.err='Connect the documents repository first (Admin → Data → Documents repository).'; return null; }
+  WD_SEPT.loading=(async()=>{
+    try{
+      const url='https://api.github.com/repos/'+encodeURIComponent(R.owner)+'/'+encodeURIComponent(R.repo)+'/contents/_templates/separation-templates.json?ref='+encodeURIComponent(R.branch||'main');
+      const r=await fetch(url,{headers:{Authorization:'Bearer '+R.token,Accept:'application/vnd.github.raw'},cache:'no-store'});
+      if(r.status===404) throw new Error('The separation agreement templates have not been built yet. Make sure the "Separation Agreement Templates" folder is in the synced OneDrive folder and run the sync.');
+      if(!r.ok) throw new Error('GitHub error '+r.status+' while loading the separation agreement templates.');
+      const d=await r.json(); WD_SEPT.list=(d.templates||[]).sort((a,b)=>a.group.localeCompare(b.group)||a.name.localeCompare(b.name,undefined,{numeric:true})); WD_SEPT.err=''; return WD_SEPT.list;
+    }catch(e){ WD_SEPT.err=e.message; return null; } finally{ WD_SEPT.loading=null; }
+  })();
+  return WD_SEPT.loading;
 }
+const wdSepTpl=f=>WD_SEPT.list&&f&&WD_SEPT.list.find(x=>x.id===f.tpl)||null;
+function wdSepFields(e){
+  const T=wdSepTpl(e&&e.f); if(!T) return [];
+  let n=0;
+  return T.blanks.map(b=>{ n++;
+    const ctx=b.label.startsWith('…'), kind={money:'amount ($)',date:'date',year:'year',name:'name',text:''}[b.type]||'';
+    return {k:b.k,label:ctx?'Fill-in '+n+(kind?' — '+kind:''):b.label,type:b.type==='date'?'date':'text',hint:ctx?b.label.replace(/\s+/g,' '):(b.type==='money'?'Amount only, e.g. 9,267.20':''),half:true};
+  });
+}
+function wdSepRender(t){
+  const T=wdSepTpl(t.f);
+  if(!T) return '<h1>Separation Agreement</h1><p class="todo">[Template not loaded — open the document again to choose a template.]</p>';
+  const val=b=>{ const v=wdV(t,b.k); if(!v) return '<span class="blank" style="min-width:'+Math.max(60,Math.min(220,b.len*9))+'px"></span>';
+    if(b.type==='date') return wdD(v); if(b.type==='money') return esc(v.replace(/^\$\s*/,'')); return esc(v); };
+  const by=Object.fromEntries(T.blanks.map(b=>[b.k,b]));
+  let html=T.html.replace(/<p(?: style="[^"]*")?>((?:<[bu]>)*)([A-Z][A-Z ,&\-]{8,})((?:<\/[bu]>)*)<\/p>/,'<p style="text-align:center;font-weight:bold;font-size:13pt;margin-bottom:12px">$2</p>');   // document title, centred
+  return '<div class="tpl">'+html.replace(/\{\{(b\d+)\}\}/g,(m,k)=>by[k]?val(by[k]):'').replace(/\{\{line:(\d+)\}\}/g,(m,n)=>'<span class="blank" style="min-width:'+Math.min(300,n*8)+'px"></span>')+'</div>';
+}
+/* template picker */
+function wdPickTemplate(cur){
+  return new Promise(res=>{
+    const L=WD_SEPT.list||[], box=$('#wdTplPick');
+    const draw=()=>{ const q=$('#tpQ').value.trim().toLowerCase(); let g='', h='';
+      for(const t of L.filter(x=>!q||(x.name+' '+x.group).toLowerCase().includes(q))){
+        if(t.group!==g){ g=t.group; h+='<div class="tpg">'+esc(g)+'</div>'; }
+        h+='<button type="button" class="tpi'+(t.id===cur?' on':'')+'" data-id="'+esc(t.id)+'"><b>'+esc(t.name)+'</b><span>'+esc(t.title||'')+' · '+t.blanks.length+' fill-in'+(t.blanks.length===1?'':'s')+'</span></button>'; }
+      $('#tpList').innerHTML=h||'<div class="sub" style="padding:14px">No template matches.</div>';
+      $('#tpList').querySelectorAll('.tpi').forEach(b=>b.onclick=()=>{ box.style.display='none'; res(b.dataset.id); }); };
+    $('#tpQ').value=''; $('#tpQ').oninput=draw; draw();
+    $('#tpCancel').onclick=()=>{ box.style.display='none'; res(null); };
+    box.style.display='flex'; $('#tpQ').focus();
+  });
+}
+
 const WD_PRINT_CSS='@page{size:letter;margin:0.9in 1in}body{font-family:"Times New Roman",Times,serif;font-size:11.5pt;line-height:1.38;color:#000;margin:0}'+
   'h1{text-align:center;font-size:15pt;margin:0 0 16px;text-transform:uppercase;letter-spacing:.5px}h2{font-size:11.5pt;margin:14px 0 6px;text-decoration:underline}'+
   'p{margin:0 0 9px;text-align:left}p.ind{text-indent:.5in}p.num{text-indent:.5in}ul{margin:0 0 9px 0;padding-left:.55in}li{margin-bottom:3px}'+
@@ -2172,6 +2198,7 @@ const WD_PRINT_CSS='@page{size:letter;margin:0.9in 1in}body{font-family:"Times N
   '.blank{display:inline-block;border-bottom:1px solid #000;height:1em}.todo{color:#B00;font-style:italic}'+
   '.comments{margin:16px 0 10px}.comments .line{border-bottom:1px solid #000;height:22px}'+
   'table.sig{width:100%;border-collapse:collapse;margin-top:24px;page-break-inside:avoid}table.sig td{padding:0;font-size:10.5pt}table.sig td.sl{border-bottom:1px solid #000;height:34px;width:62%}table.sig td.gap{width:8%}table.sig td.sd{border-bottom:1px solid #000;width:30%}table.sig tr.sp td{height:26px;padding-top:14px}'+
+  '.tpl p{margin:0 0 7px;text-align:left}.tpl p.sp{height:4px;margin:0}.tpl table.tt{width:100%;border-collapse:collapse}.tpl table.tt td{vertical-align:top;padding:2px 6px 2px 0}'+
   '.draft{position:fixed;top:40%;left:0;right:0;text-align:center;font:bold 110pt Arial,sans-serif;color:rgba(200,0,0,.12);transform:rotate(-28deg);pointer-events:none;z-index:9}';
 
 /* ================= Workday: HR task tracker =================
@@ -2402,8 +2429,15 @@ $('#wnSave').onclick=async()=>{
   const name=v.split(' — ')[0].trim(), p=(WD.newPeople||[]).find(x=>x.name.toLowerCase()===name.toLowerCase())||{name,title:'',loc:'',mgr:''};
   const type=$('#wnType').value, who=wdIsAdmin()?$('#wnWho').value:'', me=wdMe(), now=wdNow();
   if(!wdIsAdmin()&&WD_ADMIN_ONLY.has(type)){ msg.className='msg bad'; msg.textContent='Only HR admins can create this document.'; return; }
+  let tplId=null;
+  if(type==='sep'){
+    msg.textContent='Loading templates…'; const L=await wdSepLoad(); msg.textContent='';
+    if(!L){ msg.className='msg bad'; msg.textContent=WD_SEPT.err; return; }
+    tplId=await wdPickTemplate(null); if(!tplId) return;
+  }
   const granted=false;
   const f={}; for(const fd of WD_TEMPLATES[type].fields) if(fd.def!==undefined) f[fd.k]=fd.def;
+  if(tplId){ f.tpl=tplId; const T=WD_SEPT.list.find(x=>x.id===tplId); for(const b of T.blanks) if(b.type==='name') f[b.k]=p.name; }
   Object.assign(f,{date:wdToday(),toName:p.name,toTitle:p.title,fromName:p.mgr||'',location:p.loc!==''?String(p.loc):''});
   if(type==='esp'){ f.start=wdToday(); const e=new Date(); e.setDate(e.getDate()+30); f.end=e.toISOString().slice(0,10); }
   const t={id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),type,emp:{name:p.name,title:p.title,loc:p.loc,emp:p.emp??null,mgr:p.mgr||''},f,
@@ -2417,8 +2451,41 @@ $('#wnSave').onclick=async()=>{
 };
 
 /* ---- task editor ---- */
-function wdOpen(id){
-  const t=WD.tasks.find(x=>x.id===id); if(!t) return;
+function wdBuildForm(t,canEdit){
+  const T=WD_TEMPLATES[t.type];
+  // right: template form
+  const form=$('#weForm');
+  const ST=t.type==='sep'?wdSepTpl(WD.edit.f):null;
+  form.innerHTML=(ST?'<div class="wdtplbar">Template: <b>'+esc(ST.name)+'</b><span class="sub">'+esc(ST.group)+'</span>'+(canEdit?'<button type="button" id="weTpl">Change template</button>':'')+'</div>':'')+
+    (T?(T.fieldsFor?T.fieldsFor(WD.edit):T.fields):[]).map(fd=>{
+    const v=WD.edit.f[fd.k]??fd.def??'', id='wf_'+fd.k, dis=canEdit?'':' disabled';
+    let inp;
+    if(fd.type==='textarea') inp='<textarea id="'+id+'" rows="'+(fd.rows||4)+'"'+dis+'>'+esc(v)+'</textarea>';
+    else if(fd.type==='select') inp='<select id="'+id+'"'+dis+'>'+fd.opts.map(o=>'<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select>';
+    else inp='<input id="'+id+'" type="'+(fd.type==='date'?'date':fd.type==='number'?'number':'text')+'" value="'+esc(v)+'"'+dis+'>';
+    return '<label class="'+(fd.wide?'wide':'')+'"><span>'+esc(fd.label)+'</span>'+inp+(fd.hint?'<em>'+esc(fd.hint)+'</em>':'')+
+      (fd.presets&&canEdit?'<div class="wdchips">'+WD_POLICIES.map(p=>'<button type="button" data-p="'+p.k+'" title="'+esc(p.text)+'">+ '+esc(p.label)+'</button>').join('')+'</div>':'')+'</label>';
+  }).join('');
+  form.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>{ WD.edit.f[el.id.slice(3)]=el.value; WD.edit.dirty=true; wdDirty(); }));
+  if(ST&&$('#weTpl')) $('#weTpl').onclick=async()=>{ const id2=await wdPickTemplate(ST.id); if(!id2||id2===ST.id) return;
+    const T2=WD_SEPT.list.find(x=>x.id===id2), old=WD.edit.f, f={tpl:id2};
+    // keep what was typed for the same kind of blank (name, termination date, COBRA date, amounts in order)
+    const pool={}; for(const b of ST.blanks){ const key=b.label.startsWith('…')?b.type:b.label; (pool[key]=pool[key]||[]).push(old[b.k]); }
+    for(const b of T2.blanks){ const key=b.label.startsWith('…')?b.type:b.label; const q=pool[key]; if(q&&q.length){ const v=q.shift(); if(v) f[b.k]=v; } }
+    WD.edit.f=f; WD.edit.dirty=true; wdBuildForm(t,canEdit); wdDirty(); };
+  form.querySelectorAll('.wdchips button').forEach(b=>b.onclick=()=>{ const p=WD_POLICIES.find(x=>x.k===b.dataset.p), ta=$('#wf_policies');
+    ta.value=(ta.value.trim()?ta.value.replace(/\s+$/,'')+'\n':'')+'- '+p.text; WD.edit.f.policies=ta.value; WD.edit.dirty=true; wdDirty(); });
+}
+async function wdOpen(id){
+  let t=WD.tasks.find(x=>x.id===id); if(!t) return;
+  if(t.type==='sep'){
+    if(!wdIsAdmin()){ alert('Only HR admins can open separation agreements.'); return; }
+    const L=await wdSepLoad(); if(!L){ alert(WD_SEPT.err); return; }
+    if(!wdSepTpl(t.f)){ const id2=await wdPickTemplate(null); if(!id2) return;
+      const T=L.find(x=>x.id===id2), f={...t.f,tpl:id2}; for(const b of T.blanks) if(b.type==='name'&&!f[b.k]) f[b.k]=t.emp&&t.emp.name||'';
+      try{ await wdSave(Lst=>{ const x=Lst.find(y=>y.id===id); if(x) x.f=f; },'Update task '+id,t.createdBy); }catch(e){ alert(e.message); return; }
+      t=WD.tasks.find(x=>x.id===id); }
+  }
   const admin=wdIsAdmin(), mine=t.createdBy===wdMe(), canEdit=admin||(mine&&t.status!=='Complete');   // viewers edit their own document until HR finalises it
   $('#weAdmin').style.display=admin?'':'none'; $('#weHist').style.display=admin?'':'none'; $('#weMeta').style.display=admin?'none':'';
   if(!admin) $('#weMeta').innerHTML='<div><span>Created</span><b>'+wdWhen(t.createdAt)+'</b></div><div><span>Last changed</span><b>'+wdWhen(t.updatedAt)+'</b></div>';
@@ -2434,20 +2501,7 @@ function wdOpen(id){
   wdTimes(t);
   wdComments(t);
   $('#weCText').value=''; $('#weCAdd').disabled=!(admin||mine); $('#weCText').disabled=!(admin||mine);
-  // right: template form
-  const form=$('#weForm');
-  form.innerHTML=(T?T.fields:[]).map(fd=>{
-    const v=WD.edit.f[fd.k]??fd.def??'', id='wf_'+fd.k, dis=canEdit?'':' disabled';
-    let inp;
-    if(fd.type==='textarea') inp='<textarea id="'+id+'" rows="'+(fd.rows||4)+'"'+dis+'>'+esc(v)+'</textarea>';
-    else if(fd.type==='select') inp='<select id="'+id+'"'+dis+'>'+fd.opts.map(o=>'<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select>';
-    else inp='<input id="'+id+'" type="'+(fd.type==='date'?'date':fd.type==='number'?'number':'text')+'" value="'+esc(v)+'"'+dis+'>';
-    return '<label class="'+(fd.wide?'wide':'')+'"><span>'+esc(fd.label)+'</span>'+inp+(fd.hint?'<em>'+esc(fd.hint)+'</em>':'')+
-      (fd.presets&&canEdit?'<div class="wdchips">'+WD_POLICIES.map(p=>'<button type="button" data-p="'+p.k+'" title="'+esc(p.text)+'">+ '+esc(p.label)+'</button>').join('')+'</div>':'')+'</label>';
-  }).join('');
-  form.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>{ WD.edit.f[el.id.slice(3)]=el.value; WD.edit.dirty=true; wdDirty(); }));
-  form.querySelectorAll('.wdchips button').forEach(b=>b.onclick=()=>{ const p=WD_POLICIES.find(x=>x.k===b.dataset.p), ta=$('#wf_policies');
-    ta.value=(ta.value.trim()?ta.value.replace(/\s+$/,'')+'\n':'')+'- '+p.text; WD.edit.f.policies=ta.value; WD.edit.dirty=true; wdDirty(); });
+  wdBuildForm(t,canEdit);
   $('#weSave').style.display=canEdit?'':'none';
   $('#weRO').style.display=canEdit?'none':''; $('#weRO').textContent=mine?'HR has finalised this document, so it can no longer be changed. You can still add comments, print it or download it.':'Only the person who created this document or an admin can edit it.';
   wdDirty();
@@ -3604,6 +3658,7 @@ function caParseIndex(idx){
   for(const fo of idx.folders){
     const ri=d.roots.length; d.roots.push(fo.root); let c=0;
     for(const x of (fo.files||[])){
+      if(/^[^/,]*template[^/,]*\//i.test(String(x.p))) continue;   // template folders are not employee records
       const parts=String(x.p).split('/'); const name=parts.pop();
       const m=String(x.d||'').match(/^(\d{4})-(\d{2})-(\d{2})/); const day=m?Math.floor(Date.UTC(+m[1],+m[2]-1,+m[3])/864e5):-1;
       d.f.push(parts.join('/')); d.n.push(name); d.m.push(day); d.r.push(ri); d.up.push(x.up!==false); c++; total++; if(x.up===false) notUp++;
@@ -3699,7 +3754,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=()=>{ if(!confirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-14.9';
+const APP_VERSION='2026-11-15.1';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
