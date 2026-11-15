@@ -2057,7 +2057,13 @@ const WD_TEMPLATES={
     render:t=>wdSep(t)
   }
 };
-const WD_TYPE_ORDER=['verbal','written','final','loc','esp','sep'];
+WD_TEMPLATES.inv={
+  name:'Investigation',
+  fields:[...WD_HDR.map(f=>f.k==='re'?{...f,def:'Investigation'}:f),
+    {k:'body',label:'Investigation details',type:'textarea',rows:22,wide:true,hint:'Free text. Leave a blank line between paragraphs; start lines with - for bullet points.'}],
+  render:t=>wdMemo('Investigation',t)
+};
+const WD_TYPE_ORDER=['verbal','written','final','loc','esp','sep','inv'];
 
 /* ---- rendering helpers (all user text is escaped) ---- */
 const wdD=v=>{ if(!v) return '________________'; const d=new Date(v+'T12:00:00'); return isNaN(d)?esc(v):d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); };
@@ -2093,6 +2099,15 @@ function wdLetter(title,reasonHead,t,policy){
     '<h2>'+esc(reasonHead)+'</h2>'+(first&&title!=='Letter of Concern'?'<p>'+esc(first)+',</p>':'')+wdParas(wdV(t,'reason'))+
     (policy?'<p>Your actions are in violation of Lincoln\'s policies and General Rules of Conduct, including:</p>'+wdParas(wdV(t,'policies').split('\n').filter(s=>s.trim()).map(s=>/^\s*[-•*]/.test(s)?s:'- '+s).join('\n')):'')+
     '<h2>Corrective Action:</h2>'+wdParas(wdV(t,'corrective'))+wdParas(wdV(t,'closing'))+wdSign(t);
+}
+function wdMemo(title,t){   // memo header + one free-text section (no signature block)
+  const cc=wdV(t,'cc').split('\n').map(s=>s.trim()).filter(Boolean);
+  return '<h1>'+esc(title)+'</h1><table class="memo">'+
+    '<tr><td>Date:</td><td>'+wdD(wdV(t,'date'))+'</td></tr>'+
+    '<tr><td>To:</td><td>'+wdBlank(wdV(t,'toName'))+(wdV(t,'toTitle')?', '+esc(wdV(t,'toTitle')):'')+'</td></tr>'+
+    '<tr><td>From:</td><td>'+wdBlank(wdV(t,'fromName'))+(wdV(t,'fromTitle')?', '+esc(wdV(t,'fromTitle')):'')+'</td></tr>'+
+    (cc.length?'<tr><td>Cc:</td><td>'+cc.map(esc).join('<br>')+'</td></tr>':'')+
+    '<tr><td>Re:</td><td>'+wdBlank(wdV(t,'re'))+'</td></tr></table>'+wdParas(wdV(t,'body'));
 }
 function wdEsp(t){
   const row=(a,av,b,bv)=>'<tr><td>'+a+'</td><td>'+wdBlank(av)+'</td><td>'+b+'</td><td>'+wdBlank(bv)+'</td></tr>';
@@ -2348,7 +2363,7 @@ function wdShow(on){
     clearInterval(WD.timer); WD.timer=setInterval(()=>{ if(!WD.edit&&document.visibilityState==='visible') wdLoad(true); },60000);
   } else clearInterval(WD.timer);
 }
-const WD_ADMIN_ONLY=new Set(['sep']);   // separation agreements: HR admins only
+const WD_ADMIN_ONLY=new Set(['sep','inv']);   // separation agreements and investigations: HR admins only
 function wdTypesFor(){ return WD_TYPE_ORDER.filter(k=>wdIsAdmin()||!WD_ADMIN_ONLY.has(k)); }
 function wdRepoFor(){ return ADMIN?ADMIN.wdRepo||null:(SESSION&&SESSION.wd&&SESSION.wd.repo)||null; }
 $('#wdRefresh').onclick=()=>wdLoad();
@@ -3684,7 +3699,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=()=>{ if(!confirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-14.8';
+const APP_VERSION='2026-11-14.9';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
