@@ -2231,11 +2231,26 @@ async function wdFetchAll(){
     try{ out.push(...(await wdReadOwner(u.email)).tasks); }catch(e){ console.warn(e.message); } }
   return out;
 }
+/* Documents saved before 14 Nov 2026 were kept in one plain tasks.json. An admin's first visit moves each one into
+   its creator's encrypted file (or the admin's, if the creator has no Workday key) and then removes tasks.json. */
+async function wdMigrateLegacy(){
+  if(!ADMIN) return 0;
+  const f=await wdGetFile('tasks.json'); if(!f) return 0;
+  let old=[]; try{ const d=JSON.parse(f.txt||'{}'); old=Array.isArray(d.tasks)?d.tasks:[]; }catch(e){ return 0; }
+  if(old.length&&WD_UNPUBLISHED.size) throw new Error('Click Publish first (Admin → Publish) so the Workday keys are saved; then your existing '+old.length+' document(s) will be moved into the new secure storage.');
+  const by=new Map();
+  for(const t of old){ let o=t.createdBy; if(!o||!wdKeyOf(o)){ o=wdMe(); t.createdBy=o; } if(!by.has(o)) by.set(o,[]); by.get(o).push(t); }
+  for(const [o,list] of by) await wdSave(L=>{ for(const t of list) if(!L.some(x=>x.id===t.id)) L.push(t); },'Move documents to secure storage',o);
+  const r=await wdApi('/contents/tasks.json',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'Remove old unencrypted task list',sha:f.sha,branch:WD.repo.branch||'main'})});
+  if(!r.ok&&r.status!==404) console.warn('Could not remove tasks.json',r.status);
+  return old.length;
+}
 async function wdLoad(quiet){
   if(!WD.repo||!WD.repo.token){ WD.err='not-connected'; wdRender(); return; }
   if(!wdKeyOf(wdMe())){ WD.err=ADMIN?'Click Publish once (Admin → Publish) to finish setting up Workday, then open Workday again.':'Workday is not fully set up for you yet. Please ask an admin to click Publish.'; wdRender(); return; }
   if(WD.loading) return; WD.loading=true; if(!quiet) wdStatus('Loading tasks…');
-  try{ WD.tasks=await wdFetchAll(); WD.loaded=true; WD.err=''; WD.lastLoad=new Date(); }
+  try{ const moved=await wdMigrateLegacy(); WD.tasks=await wdFetchAll(); WD.loaded=true; WD.err=''; WD.lastLoad=new Date();
+       if(moved) toast(moved+' existing document(s) moved into secure storage.'); }
   catch(e){ WD.err=e.message; }
   finally{ WD.loading=false; wdRender(); }
 }
@@ -2312,7 +2327,7 @@ function wdRender(){
       '<td class="c"><span class="wdpill" style="color:'+WD_SCOL[t.status]+';background:'+WD_SCOL[t.status]+'1F">'+esc(t.status)+'</span></td>'+
       '<td>'+wdDay(t.completedAt)+'</td><td>'+(t.completedAt?esc(wdTaken(t)):'<span class="sub">open '+esc(wdOpenFor(t))+'</span>')+'</td>'+
       '<td class="c">'+((t.comments||[]).length||'')+'</td><td class="c"><button class="wdopen">Open</button></td></tr>').join('')+'</tbody></table>'
-    :'<div class="wdempty">'+(all.length?'No documents match these filters.':admin?'No tasks yet. Click <b>+ New document</b> to create one and assign it.':'You have not created any documents yet. Click <b>+ New document</b> to start one.')+'</div>';
+    :'<div class="wdempty">'+(all.length?'No documents match these filters.':admin?'No documents yet. Click <b>+ New document</b> to create one and assign it.<br><span class="sub">Documents that viewers create appear here once you have clicked <b>Publish</b> after giving them the Workday permission.</span>':'You have not created any documents yet. Click <b>+ New document</b> to start one.')+'</div>';
   body.querySelectorAll('tr[data-id]').forEach(tr=>tr.onclick=()=>wdOpen(tr.dataset.id));
   wdStatus(WD.lastLoad?'Updated '+WD.lastLoad.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'');
 }
@@ -3646,7 +3661,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=()=>{ if(!confirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-14.5';
+const APP_VERSION='2026-11-14.6';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
