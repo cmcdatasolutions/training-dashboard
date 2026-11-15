@@ -2190,36 +2190,80 @@ const b64uEnc=s=>{ const b=new TextEncoder().encode(s); let o=''; for(let i=0;i<
 const b64uDec=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0)));
 function wdApi(path,opt){ const R=WD.repo; return fetch('https://api.github.com/repos/'+encodeURIComponent(R.owner)+'/'+encodeURIComponent(R.repo)+path,
   {...(opt||{}),cache:'no-store',headers:{Authorization:'Bearer '+R.token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...((opt&&opt.headers)||{})}}); }
-async function wdFetch(){
-  const r=await wdApi('/contents/tasks.json?ref='+encodeURIComponent(WD.repo.branch||'main'));
-  if(r.status===404) return {tasks:[],sha:null};
-  if(r.status===401||r.status===403) throw new Error('The Workday key has expired or cannot reach '+WD.repo.owner+'/'+WD.repo.repo+' (GitHub '+r.status+'). An admin can update it in Admin → Data.');
-  if(!r.ok) throw new Error('GitHub error '+r.status+' while loading tasks.');
+/* Each person's documents are kept in their own file, tasks/<hash of email>.json, ENCRYPTED with a key only
+   that person and the admins hold (u.wdKey, handed out in the encrypted sign-in bundles). Everyone shares the
+   repository key, so without this a viewer could read other viewers' documents straight from GitHub. */
+const wdKeyCache=new Map();
+function wdKeyOf(email){
+  if(ADMIN){ const u=ADMIN.users.find(x=>x.email===email); return u&&u.wdKey||null; }
+  return email===wdMe()&&SESSION.wd?SESSION.wd.key||null:null;
+}
+async function wdCryptoKey(b64){ if(!wdKeyCache.has(b64)) wdKeyCache.set(b64,await crypto.subtle.importKey('raw',b64d(b64),'AES-GCM',false,['encrypt','decrypt'])); return wdKeyCache.get(b64); }
+async function wdEnc(obj,b64){ const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},await wdCryptoKey(b64),new TextEncoder().encode(JSON.stringify(obj)));
+  return JSON.stringify({v:1,iv:b64e(iv),ct:b64e(ct)}); }
+async function wdDec(txt,b64){ const o=JSON.parse(txt);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(o.iv)},await wdCryptoKey(b64),b64d(o.ct)); return JSON.parse(new TextDecoder().decode(pt)); }
+const wdPath=async email=>'tasks/'+(await sha256hex(normEmail(email))).slice(0,40)+'.json';
+function wdErr(r,doing){
+  if(r.status===401||r.status===403) return new Error('The Workday key has expired or cannot reach '+WD.repo.owner+'/'+WD.repo.repo+' (GitHub '+r.status+'). An admin can update it in Admin → Data.');
+  return new Error('GitHub error '+r.status+' while '+doing+'.');
+}
+async function wdGetFile(path){   // -> {txt, sha} or null
+  const r=await wdApi('/contents/'+path+'?ref='+encodeURIComponent(WD.repo.branch||'main'));
+  if(r.status===404) return null; if(!r.ok) throw wdErr(r,'loading tasks');
   const j=await r.json(); let txt=j.content?b64uDec(j.content):'';
-  if(!txt&&j.sha){ const b=await wdApi('/git/blobs/'+j.sha); if(!b.ok) throw new Error('GitHub error '+b.status); txt=b64uDec((await b.json()).content); }
-  const d=txt?JSON.parse(txt):{tasks:[]}; return {tasks:Array.isArray(d.tasks)?d.tasks:[],sha:j.sha};
+  if(!txt&&j.sha){ const b=await wdApi('/git/blobs/'+j.sha); if(!b.ok) throw wdErr(b,'loading tasks'); txt=b64uDec((await b.json()).content); }
+  return {txt,sha:j.sha};
+}
+async function wdReadOwner(email){   // -> {tasks, sha}
+  const key=wdKeyOf(email); if(!key) throw new Error('Workday is not fully set up for '+email+' yet. An admin needs to click Publish once.');
+  const f=await wdGetFile(await wdPath(email)); if(!f) return {tasks:[],sha:null};
+  try{ const d=await wdDec(f.txt,key); return {tasks:Array.isArray(d.tasks)?d.tasks:[],sha:f.sha}; }
+  catch(e){ throw new Error('The documents for '+email+' could not be unlocked. An admin may need to publish again.'); }
+}
+async function wdFetchAll(){
+  if(!ADMIN){ const {tasks}=await wdReadOwner(wdMe()); return tasks; }
+  const r=await wdApi('/contents/tasks?ref='+encodeURIComponent(WD.repo.branch||'main'));
+  if(r.status===404) return []; if(!r.ok) throw wdErr(r,'listing tasks');
+  const files=new Set((await r.json()).filter(x=>x.type==='file').map(x=>'tasks/'+x.name)), out=[];
+  for(const u of ADMIN.users){ if(!u.wdKey) continue; const p=await wdPath(u.email); if(!files.has(p)) continue;
+    try{ out.push(...(await wdReadOwner(u.email)).tasks); }catch(e){ console.warn(e.message); } }
+  return out;
 }
 async function wdLoad(quiet){
   if(!WD.repo||!WD.repo.token){ WD.err='not-connected'; wdRender(); return; }
+  if(!wdKeyOf(wdMe())){ WD.err=ADMIN?'Click Publish once (Admin → Publish) to finish setting up Workday, then open Workday again.':'Workday is not fully set up for you yet. Please ask an admin to click Publish.'; wdRender(); return; }
   if(WD.loading) return; WD.loading=true; if(!quiet) wdStatus('Loading tasks…');
-  try{ const {tasks,sha}=await wdFetch(); WD.tasks=tasks; WD.sha=sha; WD.loaded=true; WD.err=''; WD.lastLoad=new Date(); }
+  try{ WD.tasks=await wdFetchAll(); WD.loaded=true; WD.err=''; WD.lastLoad=new Date(); }
   catch(e){ WD.err=e.message; }
   finally{ WD.loading=false; wdRender(); }
 }
-/* apply(tasks) changes the list in place; re-run on the newest copy if someone else saved first */
-async function wdSave(apply,what){
+/* apply(list) changes ONE person's list (the document creator's file); re-run on the newest copy if someone else saved first */
+async function wdSave(apply,what,owner){
+  owner=owner||wdMe(); const key=wdKeyOf(owner);
+  if(!key) throw new Error('Workday is not fully set up for '+owner+' yet. An admin needs to click Publish once.');
+  if(ADMIN&&WD_UNPUBLISHED.has(owner)) throw new Error('Click Publish first (Admin → Publish) so the new Workday key for '+owner+' is saved, then try again.');
+  const path=await wdPath(owner);
   for(let tryNo=0;tryNo<5;tryNo++){
-    const {tasks,sha}=tryNo===0&&WD.loaded?{tasks:JSON.parse(JSON.stringify(WD.tasks)),sha:WD.sha}:await wdFetch();
+    const {tasks,sha}=await wdReadOwner(owner);
     apply(tasks);
-    const body={message:(what||'Update tasks')+' ('+wdMe()+')',content:b64uEnc(JSON.stringify({version:1,updated:new Date().toISOString(),tasks},null,1)),branch:WD.repo.branch||'main'};
+    const body={message:(what||'Update tasks'),content:b64uEnc(await wdEnc({version:2,owner:'(encrypted)',updated:new Date().toISOString(),tasks},key)),branch:WD.repo.branch||'main'};
     if(sha) body.sha=sha;
-    const r=await wdApi('/contents/tasks.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(r.ok){ const j=await r.json(); WD.tasks=tasks; WD.sha=j.content&&j.content.sha; WD.loaded=true; WD.lastLoad=new Date(); return true; }
-    if(r.status===409||r.status===422){ await new Promise(res=>setTimeout(res,300+Math.random()*500)); continue; }   // someone else saved: reload and re-apply
+    const r=await wdApi('/contents/'+path,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(r.ok){ WD.tasks=WD.tasks.filter(t=>t.createdBy!==owner).concat(tasks); WD.loaded=true; WD.lastLoad=new Date(); return true; }
+    if(r.status===409||r.status===422){ await new Promise(res=>setTimeout(res,300+Math.random()*500)); continue; }
     if(r.status===401||r.status===403||r.status===404) throw new Error('Could not save: the Workday key cannot write to '+WD.repo.owner+'/'+WD.repo.repo+' (GitHub '+r.status+'). It needs Contents: Read and write.');
     throw new Error('GitHub error '+r.status+' while saving.');
   }
-  throw new Error('Could not save because the task list kept changing. Please try again.');
+  throw new Error('Could not save because the document kept changing. Please try again.');
+}
+/* every admin and Workday user needs a personal document key; made by admins, saved when they Publish */
+const WD_UNPUBLISHED=new Set();
+function wdEnsureKeys(){
+  if(!ADMIN) return 0; let n=0;
+  for(const u of ADMIN.users) if((u.role==='admin'||(u.perms&&u.perms.wd))&&!u.wdKey){ u.wdKey=b64e(crypto.getRandomValues(new Uint8Array(32))); WD_UNPUBLISHED.add(u.email); n++; }
+  if(n) markDirty(); return n;
 }
 
 /* ---- helpers ---- */
@@ -2282,7 +2326,7 @@ function wdCounts(all){
 }
 function wdShow(on){
   const V=document.getElementById('wdView'); V.style.display=on?'flex':'none';
-  if(on){ WD.repo=wdRepoFor(); WD.staff=SESSION&&SESSION.wd?SESSION.wd.staff||[]:[];
+  if(on){ WD.repo=wdRepoFor(); WD.staff=SESSION&&SESSION.wd?SESSION.wd.staff||[]:[]; if(ADMIN&&WD.repo) wdEnsureKeys();
     $('#wdType').innerHTML='<option value="">All documents</option>'+WD_TYPE_ORDER.map(k=>'<option value="'+k+'">'+WD_TEMPLATES[k].name+'</option>').join('');
     $('#wdType').value=WD.filt.type;
     wdRender(); wdLoad(WD.loaded);
@@ -2333,7 +2377,7 @@ $('#wnSave').onclick=async()=>{
     status:'Not started',assignee:who||'',assignedAt:who?now:null,assignedBy:who?me:'',due:wdIsAdmin()?$('#wnDue').value||'':'',startedAt:null,completedAt:null,
     comments:[],log:[{by:me,at:now,what:'Created'+(who?' and assigned to '+wdName(who):'')}],createdAt:now,createdBy:me,updatedAt:now,updatedBy:me};
   const btn=$('#wnSave'); btn.disabled=true; btn.textContent='Saving…';
-  try{ await wdSave(L=>L.push(t),'New '+WD_TEMPLATES[type].name+' for '+p.name); $('#wdNewForm').style.display='none'; wdRender(); wdOpen(t.id);
+  try{ await wdSave(L=>L.push(t),'New document',me); $('#wdNewForm').style.display='none'; wdRender(); wdOpen(t.id);
     if(granted) toast(wdName(who)+' now has Workday access. Click Publish so they can see this task.'); }
   catch(e){ msg.className='msg bad'; msg.textContent=e.message; }
   finally{ btn.disabled=false; btn.textContent='Create'; }
@@ -2419,19 +2463,19 @@ $('#weSave').onclick=async()=>{
   if(wdIsAdmin()&&$('#weStatus').value==='Complete'&&t0status(e.id)!=='Complete'&&!confirm('Mark this document Complete? The time taken will be recorded now.')) return;
   btn.disabled=true; btn.textContent='Saving…';
   const granted=false;
-  try{ await wdSave(L=>wdApplyEdit(L,me,now),'Update task '+e.id); if(granted) setTimeout(()=>toast(wdName($('#weWho').value)+' now has Workday access. Click Publish so they can see this task.'),1600); const t=WD.tasks.find(x=>x.id===e.id); e.dirty=false; wdTimes(t); wdComments(t); wdDirty(); toast('Saved.'); }
+  try{ await wdSave(L=>wdApplyEdit(L,me,now),'Update task '+e.id,wdOwner(e.id)); if(granted) setTimeout(()=>toast(wdName($('#weWho').value)+' now has Workday access. Click Publish so they can see this task.'),1600); const t=WD.tasks.find(x=>x.id===e.id); e.dirty=false; wdTimes(t); wdComments(t); wdDirty(); toast('Saved.'); }
   catch(err){ alert(err.message); wdDirty(); }
 };
 $('#weCAdd').onclick=async()=>{
   const txt=$('#weCText').value.trim(); if(!txt) return;
   const e=WD.edit, me=wdMe(), now=wdNow(), name=SESSION.profile.name||me, btn=$('#weCAdd'); btn.disabled=true;
-  try{ await wdSave(L=>{ const t=L.find(x=>x.id===e.id); if(!t) throw new Error('This task was deleted.'); t.comments=(t.comments||[]).concat({by:me,name,at:now,text:txt}); t.updatedAt=now; t.updatedBy=me; },'Comment on '+e.id);
+  try{ await wdSave(L=>{ const t=L.find(x=>x.id===e.id); if(!t) throw new Error('This task was deleted.'); t.comments=(t.comments||[]).concat({by:me,name,at:now,text:txt}); t.updatedAt=now; t.updatedBy=me; },'Comment on '+e.id,wdOwner(e.id));
     $('#weCText').value=''; wdComments(WD.tasks.find(x=>x.id===e.id)); }
   catch(err){ alert(err.message); } finally{ btn.disabled=false; }
 };
 $('#weDel').onclick=async()=>{
   const e=WD.edit; if(!confirm('Delete this task and its document draft? This cannot be undone.')) return;
-  try{ await wdSave(L=>{ const i=L.findIndex(x=>x.id===e.id); if(i>=0) L.splice(i,1); },'Delete task '+e.id); $('#wdEditor').style.display='none'; WD.edit=null; wdRender(); }
+  try{ await wdSave(L=>{ const i=L.findIndex(x=>x.id===e.id); if(i>=0) L.splice(i,1); },'Delete task '+e.id,wdOwner(e.id)); $('#wdEditor').style.display='none'; WD.edit=null; wdRender(); }
   catch(err){ alert(err.message); }
 };
 function wdWordify(h){   // Word ignores borders on empty cells/divs: use explicit widths and underscore lines instead
@@ -2461,6 +2505,7 @@ $('#weWord').onclick=()=>{
   a.download=(T.name+' - '+(t.emp&&t.emp.name||'employee')).replace(/[\\/:*?"<>|]+/g,'')+(done?'':' (draft)')+'.doc';
   document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
 };
+function wdOwner(id){ const t=WD.tasks.find(x=>x.id===id); return t&&t.createdBy||wdMe(); }
 function t0status(id){ const t=WD.tasks.find(x=>x.id===id); return t?t.status:''; }
 /* ---- print ---- */
 $('#wePrint').onclick=()=>{
@@ -2644,6 +2689,7 @@ async function publish(cfg){
   const version=new Date().toISOString();
   const files={};
   for(const g of (ADMIN.groups||[])) syncGroup(g);
+  if(ADMIN.wdRepo) wdEnsureKeys();
   plog('Encrypting data for '+ADMIN.users.length+' user(s)…');
   for(const u of ADMIN.users){
     const h=await sha256hex(u.email);
@@ -2653,7 +2699,7 @@ async function publish(cfg){
     if(u.role==='admin'){ payload.users=ADMIN.users; payload.groups=ADMIN.groups||[]; payload.caDocs=ADMIN.caDocs; payload.people=ADMIN.people; payload.caUpdated=ADMIN.caUpdated; payload.docRepo=ADMIN.docRepo||null; payload.mail=ADMIN.mail||null; payload.caSource=ADMIN.caSource||null; payload.wdRepo=ADMIN.wdRepo||null; }
     else if(u.perms&&u.perms.ca){ payload.ca={rows:caSubset(caDerive(ADMIN.caDocs,ADMIN.people),u.perms),files:caFiles(ADMIN.caDocs,ADMIN.people,u.perms),updated:ADMIN.caUpdated,repo:ADMIN.docRepo||null,
                                    people:peopleSubset(ADMIN.people,u.perms),generated:(ADMIN.caSource&&ADMIN.caSource.generated)||null}; }
-    if(u.role!=='admin'&&u.perms&&u.perms.wd) payload.wd={repo:ADMIN.wdRepo||null,staff:wdStaffList()};
+    if(u.role!=='admin'&&u.perms&&u.perms.wd) payload.wd={repo:ADMIN.wdRepo||null,staff:wdStaffList(),key:u.wdKey||null};   // their own document key only
     files['data/u/'+h+'.json']=await encryptBundle(payload,b64d(u.key),u.salt);
     plog('  ✓ '+u.email+' ('+nf.format(payload.data.empNo.length)+' rows'+(u.role==='admin'||payload.ca?' + Corrective Actions':'')+')');
   }
@@ -2679,6 +2725,7 @@ async function publish(cfg){
   // keep my own session valid if I changed my own password
   const me=ADMIN.users.find(x=>x.email===SESSION.email);
   if(me){ SESSION.keyRaw=b64d(me.key); try{sessionStorage.setItem('td_sess',JSON.stringify({email:me.email,key:me.key}));}catch(e){} }
+  WD_UNPUBLISHED.clear();
   plog('Published ✓  Users will see the changes within about a minute (next sign-in or page refresh).','ok');
 }
 window.addEventListener('beforeunload',e=>{ if(ADMIN&&ADMIN.dirty){e.preventDefault();e.returnValue='';} });
@@ -3593,13 +3640,13 @@ $('#wSave').onclick=async()=>{
     const res=await fetch('https://api.github.com/repos/'+encodeURIComponent(r.owner)+'/'+encodeURIComponent(r.repo),{headers:{Authorization:'Bearer '+r.token,Accept:'application/vnd.github+json'},cache:'no-store'});
     if(!res.ok) throw new Error(res.status===404||res.status===401||res.status===403?'The key cannot reach '+r.owner+'/'+r.repo+'. Check the repository name and that the key has Contents: Read and write on it.':'GitHub error '+res.status);
     const j=await res.json(); if(!j.private) throw new Error(r.owner+'/'+r.repo+' is PUBLIC. Workday tasks contain confidential HR information; make the repository private first.');
-    ADMIN.wdRepo=r; WD.repo=r; WD.loaded=false; markDirty(); renderWdRepo(); m.className='msg ok'; m.textContent='Connected. Click Publish so Workday users get it.';
+    ADMIN.wdRepo=r; WD.repo=r; WD.loaded=false; wdEnsureKeys(); markDirty(); renderWdRepo(); m.className='msg ok'; m.textContent='Connected. Click Publish so Workday users get it.';
   }catch(err){ m.className='msg bad'; m.textContent=err.message; }
 };
 $('#wClear').onclick=()=>{ if(!confirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-14.4';
+const APP_VERSION='2026-11-14.5';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
