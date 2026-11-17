@@ -1538,6 +1538,7 @@ function setMeta(src,n,updated){
   TD_META={src,n,updated}; renderMeta();
   subEl.innerHTML='Learning &amp; compliance training activity<br><b style="color:#fff">'+nf.format(n)+'</b> enrollment records';
 }
+function needsPw(u){ const p=u.perms||{}, a=admOf(p); return u.role==='admin'||p.td!==false||!!p.ca||!!p.wd||a.td||a.ca||a.wd; }   // only Go1-only users sign in with their email
 const SUPERUSERS=['m.a.mcreary@gmail.com','cmoore@lincolntech.edu'];
 function migrateRoles(){
   if(!ADMIN||ADMIN.rolesV2) return;
@@ -1556,7 +1557,7 @@ function startSession(payload,keyRaw,salt,man){
   ADMIN=payload.profile.role==='admin'?{raw:payload.data,users:payload.users||[],source:payload.source,updated:payload.updated,dirty:false,caDocs:payload.caDocs||null,people:payload.people||null,caUpdated:payload.caUpdated||null,docRepo:payload.docRepo||null,mail:payload.mail||null,caSource:payload.caSource||null,groups:payload.groups||[],wdRepo:payload.wdRepo||null,wdVaultKey:payload.wdVaultKey||null,rolesV2:!!payload.rolesV2}:null;
   M=buildModel(payload.data); setDefaults(); update(); setMeta(payload.source,M.n,payload.updated);
   const p=payload.profile;
-  document.getElementById('who').textContent=(p.name?p.name+' · ':'')+p.email+(p.role==='admin'?' (Superuser)':p.emailOnly?' (Workday)':'');
+  document.getElementById('who').textContent=(p.name?p.name+' · ':'')+p.email+(p.role==='admin'?' (Superuser)':p.emailOnly?' (Go1)':'');
   document.getElementById('scope').textContent=p.role==='admin'||admOf(p.perms).td||!hasLimits(p.perms)?'All data':'Limited view';
   document.getElementById('scope').title=scopeText(p.perms,p.role);
   migrateRoles();
@@ -1579,7 +1580,7 @@ function scopeText(p,role){
 }
 async function doLogin(email,password){
   const man=await getManifest();
-  if(!password){   // Workday / Go1 only: email sign-in
+  if(!password){   // Go1 only: email sign-in
     const b=await fetchBundle(email,man,true);
     if(!b) throw new Error((await fetchBundle(email,man))?'Please enter your password.':'This email does not have access. Contact your dashboard administrator.');
     const key=await deriveKeyRaw(EMAIL_ONLY_PREFIX+normEmail(email),b64d(b.salt),b.iter);
@@ -1589,7 +1590,7 @@ async function doLogin(email,password){
     return;
   }
   const b=await fetchBundle(email,man);
-  if(!b) throw new Error((await fetchBundle(email,man,true))?'This account only uses Workday: leave the password blank.':'Email or password is incorrect.');
+  if(!b) throw new Error((await fetchBundle(email,man,true))?'This account only uses Go1: leave the password blank.':'Email or password is incorrect.');
   const key=await deriveKeyRaw(password,b64d(b.salt),b.iter);
   let payload; try{payload=await decryptBundle(b,key);}catch(e){throw new Error('Email or password is incorrect.');}
   startSession(payload,key,b.salt,man);
@@ -1839,7 +1840,7 @@ function renderUsers(){
   const users=ADMIN.users.slice().sort((a,b)=>(a.role===b.role?a.email.localeCompare(b.email):a.role==='admin'?-1:1));
   $('#uCount').textContent=users.length+' user'+(users.length===1?'':'s');
   $('#uBody').innerHTML=users.map(u=>'<tr><td><b>'+esc(u.email)+'</b>'+(u.name?'<div class="sub">'+esc(u.name)+'</div>':'')+'</td>'+
-    '<td><span class="role '+u.role+'">'+(u.role==='admin'?'Superuser':'Viewer')+'</span>'+(u.role!=='admin'&&u.perms&&u.perms.adm&&(u.perms.adm.td||u.perms.adm.ca||u.perms.adm.wd)?'<div class="admtag">Admin: '+[u.perms.adm.td?'T&amp;D':'',u.perms.adm.ca?'Corr. Actions':'',u.perms.adm.wd?'Workday':''].filter(Boolean).join(', ')+'</div>':'')+(u.role!=='admin'&&!u.key?'<div class="admtag" style="color:#1F4E8C">Email-only sign-in</div>':'')+'</td>'+
+    '<td><span class="role '+u.role+'">'+(u.role==='admin'?'Superuser':'Viewer')+'</span>'+(u.role!=='admin'&&u.perms&&u.perms.adm&&(u.perms.adm.td||u.perms.adm.ca||u.perms.adm.wd)?'<div class="admtag">Admin: '+[u.perms.adm.td?'T&amp;D':'',u.perms.adm.ca?'Corr. Actions':'',u.perms.adm.wd?'Workday':''].filter(Boolean).join(', ')+'</div>':'')+(!u.key?(needsPw(u)?'<div class="admtag" style="color:#B3261E">Needs a password (Edit → Generate)</div>':'<div class="admtag" style="color:#1F4E8C">Email-only sign-in</div>'):'')+'</td>'+
     '<td>'+(u.role!=='admin'&&groupOf(u)?'<span class="grp">'+esc(groupOf(u).name)+'</span>':'<span class="none">—</span>')+'</td>'+
     '<td>'+(u.role==='admin'?'<span class="all">All</span>':summary(u.perms.locs,'locations'))+'</td>'+
     '<td>'+(u.role==='admin'?'<span class="all">All</span>':summary(u.perms.progs,'programs'))+'</td>'+
@@ -1954,7 +1955,7 @@ function editUser(email){
   $('#fCA').checked=EDIT.perms.ca; $('#fTD').checked=EDIT.perms.td; $('#fGO1').checked=EDIT.perms.go1; $('#fWD').checked=EDIT.perms.wd; setAdmBoxes(EDIT.perms);
   $('#fTitle').textContent=u?'Edit user':'Add user';
   $('#fEmail').value=u?u.email:''; $('#fName').value=u?.name||''; $('#fRole').value=u?.role||'viewer';
-  $('#fPass').value=''; $('#fPass').placeholder=u?(u.key?'Leave blank to keep current password':'Not needed for Workday / Go1 only (email sign-in)'):'Needed for T&D, Corrective Actions or any Admin access';
+  $('#fPass').value=''; $('#fPass').placeholder=u?(u.key?'Leave blank to keep current password':'Not needed for Go1 only (email sign-in)'):'Needed for every dashboard except Go1 only';
   $('#fPassNote').textContent='';
   $('#fErr').textContent='';
   $('#modSearch').value='';
@@ -2004,8 +2005,10 @@ $('#fSave').onclick=async()=>{
   const err=$('#fErr'); err.textContent='';
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){err.textContent='Enter a valid email address.';return;}
   if(ADMIN.users.some(x=>x.email===email&&x!==EDIT.orig)){err.textContent='That email already has an account.';return;}
-  const needsPass=role==='admin'||$('#fTD').checked||$('#fCA').checked||$('#aTD').checked||$('#aCA').checked||$('#aWD').checked;
-  if(needsPass&&!pass&&!(EDIT.orig&&EDIT.orig.key)){err.textContent=(role==='admin'?'Superusers':'Users with Training & Development, Corrective Actions or Admin access')+' need a password (use Generate). Workday / Go1-only users sign in with their email and need none.';return;}
+  const gpre=role!=='admin'&&ADMIN.groups?ADMIN.groups.find(g=>g.id===$('#fGroup').value):null;
+  const effP=gpre?gpre.perms:(()=>{ const t={td:$('#fTD').checked,ca:$('#fCA').checked,wd:$('#fWD').checked,adm:{}}; readAdmBoxes(t); return t; })();
+  const needsPass=needsPw({role,perms:effP});
+  if(needsPass&&!pass&&!(EDIT.orig&&EDIT.orig.key)){err.textContent='This user needs a password (use Generate). Only Go1-only users sign in with just their email.';return;}
   if(pass&&pass.length<8){err.textContent='Password must be at least 8 characters.';return;}
   if(EDIT.orig&&EDIT.orig.role==='admin'&&role!=='admin'&&ADMIN.users.filter(x=>x.role==='admin').length<2){err.textContent='You must keep at least one Superuser.';return;}
   const pTD=$('#fTD').checked, pCA=$('#fCA').checked, pGO1=$('#fGO1').checked, pWD=$('#fWD').checked;
@@ -2961,14 +2964,15 @@ async function publish(cfg){
       if(admOf(u.perms).wd) payload.wd.ring=wdRingForPublish();                       // Workday Admin: keys to every document + the HR vault
     }
     if(u.key){ files['data/u/'+h+'.json']=await encryptBundle(payload,b64d(u.key),u.salt); keepU.push(h); }
-    // Workday viewers (not Workday Admins) can also sign in with just their email: a Workday-only copy
-    if(u.role!=='admin'&&u.perms&&u.perms.wd&&!admOf(u.perms).wd&&ADMIN.wdRepo&&u.wdKey){
+    // Go1-only users sign in with just their email: a copy that opens Go1 and nothing else
+    if(!needsPw(u)&&u.perms&&u.perms.go1!==false){
       if(!u.wSalt){ u.wSalt=b64e(crypto.getRandomValues(new Uint8Array(16))); }
-      const wp={profile:{email:u.email,name:u.name||'',role:'viewer',emailOnly:true,perms:{locs:[],mods:[],progs:[],td:false,ca:false,go1:u.perms.go1!==false,wd:true}},
-                updated:ADMIN.updated,source:ADMIN.source,programs:PROGRAMS,data:emptyRaw(),wd:{repo:ADMIN.wdRepo,staff:wdStaffList(),key:u.wdKey}};
+      const wp={profile:{email:u.email,name:u.name||'',role:'viewer',emailOnly:true,perms:{locs:[],mods:[],progs:[],td:false,ca:false,go1:true,wd:false}},
+                updated:ADMIN.updated,source:ADMIN.source,programs:PROGRAMS,data:emptyRaw()};
       files['data/w/'+h+'.json']=await encryptBundle(wp,await deriveKeyRaw(EMAIL_ONLY_PREFIX+u.email,b64d(u.wSalt)),u.wSalt); keepW.push(h);
     }
-    plog('  ✓ '+u.email+' ('+(u.key?nf.format(payload.data.empNo.length)+' rows'+(u.role==='admin'||payload.ca?' + Corrective Actions':''):'email sign-in, Workday')+')');
+    if(!u.key&&needsPw(u)){ plog('  ⚠ '+u.email+' — needs a password before they can sign in (Users → Edit → Generate)'); continue; }
+    plog('  ✓ '+u.email+' ('+(u.key?nf.format(payload.data.empNo.length)+' rows'+(u.role==='admin'||payload.ca?' + Corrective Actions':''):'email sign-in, Go1 only')+')');
   }
   const manifest={version,updated:ADMIN.updated,source:ADMIN.source,files:keepU,wfiles:keepW};
   files['data/manifest.json']=JSON.stringify(manifest,null,1);
@@ -3927,7 +3931,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=async ()=>{ if(!await uiConfirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-17.2';
+const APP_VERSION='2026-11-17.3';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
