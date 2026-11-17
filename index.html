@@ -759,7 +759,7 @@
             <span class="dpl">Without a group, each person gets</span>
             <label class="inline"><input type="checkbox" id="bTD" checked> Training &amp; Development</label>
             <label class="inline"><input type="checkbox" id="bCA"> Corrective Actions</label>
-            <label class="inline"><input type="checkbox" id="bGO1" checked> Go1 Training</label>
+            <label class="inline"><input type="checkbox" id="bGO1"> Go1 Training</label>
             <label class="inline"><input type="checkbox" id="bOwnLoc" checked> limited to their own location</label>
           </div>
         </div>
@@ -1605,7 +1605,7 @@ async function resumeSession(){
 }
 async function signOut(){
   if(ADMIN&&ADMIN.dirty&&!await uiConfirm('You have unpublished changes. Sign out anyway?')) return;
-  try{sessionStorage.removeItem('td_sess');}catch(e){}
+  try{sessionStorage.removeItem('td_sess');sessionStorage.removeItem('td_dash');}catch(e){}
   location.reload();
 }
 document.getElementById('btnSignOut').onclick=signOut;
@@ -1739,7 +1739,7 @@ function renderGroups(){
 $('#gAdd').onclick=()=>editGroup(null);
 function editGroup(id){
   const g=id?ADMIN.groups.find(x=>x.id===id):null;
-  EDIT={kind:'group',orig:g,perms:g?clonePerms(g.perms):{locs:[],mods:[],progs:[],ca:false,td:true,go1:true,wd:false},
+  EDIT={kind:'group',orig:g,perms:g?clonePerms(g.perms):{locs:[],mods:[],progs:[],ca:false,td:true,go1:false,wd:false},
         members:new Set(ADMIN.users.filter(u=>g&&u.group===g.id).map(u=>u.email))};
   $('#fCA').checked=EDIT.perms.ca; $('#fTD').checked=EDIT.perms.td; $('#fGO1').checked=EDIT.perms.go1; $('#fWD').checked=!!EDIT.perms.wd; setAdmBoxes(EDIT.perms);
   $('#fTitle').textContent=g?'Edit group':'New group'; $('#gName').value=g?g.name:''; $('#memSearch').value=''; $('#modSearch').value='';
@@ -1949,7 +1949,7 @@ $('#bSave').onclick=async()=>{
 let EDIT=null;
 function editUser(email){
   const u=email?ADMIN.users.find(x=>x.email===email):null;
-  EDIT={kind:'user',orig:u, perms:{locs:[...(u?.perms.locs||[])],mods:[...(u?.perms.mods||[])],progs:[...(u?.perms.progs||[])],ca:!!(u?.perms.ca),td:!(u&&u.perms.td===false),go1:!(u&&u.perms.go1===false),wd:!!(u&&u.perms.wd)}};
+  EDIT={kind:'user',orig:u, perms:{locs:[...(u?.perms.locs||[])],mods:[...(u?.perms.mods||[])],progs:[...(u?.perms.progs||[])],ca:!!(u?.perms.ca),td:!(u&&u.perms.td===false),go1:!!(u&&u.perms.go1!==false),wd:!!(u&&u.perms.wd)}};
   EDIT.perms.adm={...admOf(u&&u.perms)};
   $('#fCA').checked=EDIT.perms.ca; $('#fTD').checked=EDIT.perms.td; $('#fGO1').checked=EDIT.perms.go1; $('#fWD').checked=EDIT.perms.wd; setAdmBoxes(EDIT.perms);
   $('#fTitle').textContent=u?'Edit user':'Add user';
@@ -3019,7 +3019,7 @@ async function refreshData(){
     if(await checkAppVersion()) return;
     const man=await getManifest();
     const b=await fetchBundle(SESSION.email,man,SESSION.emailOnly);
-    if(!b){ toast('Your access has been removed. Please contact your administrator.',true); setTimeout(()=>{try{sessionStorage.removeItem('td_sess');}catch(e){} location.reload();},2500); return; }
+    if(!b){ toast('Your access has been removed. Please contact your administrator.',true); setTimeout(()=>{try{sessionStorage.removeItem('td_sess');sessionStorage.removeItem('td_dash');}catch(e){} location.reload();},2500); return; }
     let payload;
     try{ payload=await decryptBundle(b,SESSION.keyRaw); }
     catch(e){ toast('Your password was changed. Please sign in again.',true); setTimeout(()=>{try{sessionStorage.removeItem('td_sess');}catch(_){} location.reload();},2500); return; }
@@ -3513,12 +3513,13 @@ function dashOptions(){
 }
 function renderDashSelects(){
   const opts=dashOptions();
-  document.querySelectorAll('#dashSel, .dashSel').forEach(s=>{ s.innerHTML=opts.map(o=>'<option value="'+esc(o.v)+'"'+(o.v===VIEW?' selected':'')+'>'+esc(o.name)+'</option>').join(''); });
+  try{ if(SESSION&&SESSION.profile) sessionStorage.setItem('td_dash',JSON.stringify(opts.map(o=>o.v.startsWith('url:')?'go1':o.v))); }catch(e){}
+  document.querySelectorAll('#dashSel, .dashSel').forEach(s=>{ s.disabled=opts.length<2; s.title=opts.length<2?'You have access to this dashboard only':''; s.innerHTML=opts.map(o=>'<option value="'+esc(o.v)+'"'+(o.v===VIEW?' selected':'')+'>'+esc(o.name)+'</option>').join(''); });
 }
 function showView(v){
   if(v==='ca'&&!(SESSION&&caCanSee(SESSION.profile))) v='td';
   if(v==='wd'&&!(SESSION&&wdCanSee(SESSION.profile))) v='td';
-  if(v==='td'&&SESSION&&!tdCanSee(SESSION.profile)){ if(caCanSee(SESSION.profile)) v='ca'; else if(wdCanSee(SESSION.profile)) v='wd'; else { location.replace(GO1_URL); return; } }
+  if(v==='td'&&SESSION&&!tdCanSee(SESSION.profile)){ if(caCanSee(SESSION.profile)) v='ca'; else if(wdCanSee(SESSION.profile)) v='wd'; else { try{sessionStorage.setItem('td_dash','["go1"]');}catch(e){} location.replace(GO1_URL); return; } }
   VIEW=v; closePops(); hideTip();
   document.querySelector('#toolbar .ttl').textContent=v==='ca'?'Corrective Action Dashboard':v==='wd'?'Workday':'Training & Development Dashboard';
   C.style.display=v==='td'?'':'none'; CC.style.display=v==='ca'?'':'none'; wdShow(v==='wd');
@@ -3926,7 +3927,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=async ()=>{ if(!await uiConfirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-17.1';
+const APP_VERSION='2026-11-17.2';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
