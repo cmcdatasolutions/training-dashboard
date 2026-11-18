@@ -1328,6 +1328,7 @@ function iapSummary(){
   const people=new Map();   // iap|employee -> record
   for(let i=0;i<M.n;i++){
     const p=M.prog[i]; if(!want.has(p)||M.empNo[i]<0) continue;
+    if(S.dFrom!==null||S.dTo!==null){ const d=M.enroll[i]; if(d<0||(S.dFrom!==null&&d<S.dFrom)||(S.dTo!==null&&d>S.dTo)) continue; }   // only enrollments inside the date window count
     const key=p+'|'+M.empNo[i];
     let r=people.get(key);
     if(!r){ r={p,emp:M.empNo[i],nm:M.name[i],jt:M.jobTitle[i],loc:M.loc[i],mods:new Map(),en:Infinity,cd:-1,show:false}; people.set(key,r); }
@@ -3988,7 +3989,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=async ()=>{ if(!await uiConfirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-18.5';
+const APP_VERSION='2026-11-18.6';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
