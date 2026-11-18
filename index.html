@@ -473,7 +473,7 @@
   #iList .pk span{flex:1}
   #iList .pk em{font-style:normal;font-size:11px;font-weight:700;color:#5A6478;white-space:nowrap}
   #iList .pk em.other{color:#C4521F}
-  #iList .pk b.mid{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#1F4E8C;width:200px;flex:0 0 200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #iList .pk b.mid{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#1F4E8C;width:210px;flex:0 0 210px;overflow-wrap:anywhere}
   .iaptools select#iBy{font-size:13px;padding:6px 8px;border:1px solid #C9D3E3;border-radius:6px}
   .iaptbl td.act{white-space:nowrap;text-align:right}
   .iaptbl td.act button{font:inherit;font-size:12px;font-weight:600;border:1px solid #C9D3E3;background:#fff;border-radius:5px;padding:3px 10px;cursor:pointer;margin-left:6px}
@@ -2901,20 +2901,19 @@ function iapList(){
   const terms=$('#iSearch').value.toLowerCase().split(byId?/[\s,;]+/:/\n/).map(x=>x.trim()).filter(Boolean);   // by ID: paste several IDs
   const titles=[...new Set([...ADMIN.raw.modTitle.d,...IAP.sel])].sort((a,b)=>a.localeCompare(b));
   let items=titles.map(t=>({t,id:''}));
-  if(byId){ const ids=iapIds(); items=[]; for(const t of titles){ const l=ids.get(t); if(l&&l.length) for(const id of l) items.push({t,id}); else items.push({t,id:''}); }
+  if(byId){ const ids=iapIds(); items=titles.map(t=>({t,id:(ids.get(t)||[]).join(', ')}));   // one row per module, all its IDs together
     items.sort((a,b)=>(a.id||'\uffff').localeCompare(b.id||'\uffff',undefined,{numeric:true})||a.t.localeCompare(b.t)); }
   const rows=[];
   for(const {t,id} of items){
     const on=IAP.sel.has(t), other=PMAP[t]&&PMAP[t]!==IAP.cur?PMAP[t]:null, st=IAP_STATS.get(t);
     if(only&&!on) continue; if(free&&other&&!on) continue;
     if(terms.length){ const hay=byId?id.toLowerCase():t.toLowerCase(); if(!terms.some(q=>hay.includes(q))) continue; }
-    rows.push('<label class="pk"><input type="checkbox" value="'+esc(t)+'"'+(on?' checked':'')+'>'+(byId?'<b class="mid">'+(id?esc(id):'—')+'</b>':'')+'<span>'+esc(t)+'</span>'+
+    rows.push('<label class="pk"><input type="checkbox" value="'+esc(t)+'"'+(on?' checked':'')+'>'+(byId?'<b class="mid" title="'+esc(id)+'">'+(id?esc(id):'—')+'</b>':'')+'<span>'+esc(t)+'</span>'+
       (other?'<em class="other" title="Saving will move this module out of '+esc(other)+'">in '+esc(other)+'</em>':'')+
       (st?'<em>'+nf.format(st.n)+' enrolled</em>':'<em class="gone" title="No enrollments for this module in the current data">not in current data</em>')+'</label>');
   }
   $('#iList').innerHTML=rows.length?rows.join(''):'<div class="more">No modules match.</div>';
   $('#iList').querySelectorAll('input').forEach(c=>c.onchange=()=>{ c.checked?IAP.sel.add(c.value):IAP.sel.delete(c.value);
-    $('#iList').querySelectorAll('input').forEach(o=>{ if(o.value===c.value) o.checked=c.checked; });   // same title under another ID
     iapCount(); });
   iapCount();
 }
@@ -3956,7 +3955,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=async ()=>{ if(!await uiConfirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-18.1';
+const APP_VERSION='2026-11-18.2';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
