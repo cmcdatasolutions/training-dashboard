@@ -700,7 +700,7 @@
         <div id="wMsg" class="msg"></div>
       </div>
       <div class="admPane" data-t="iap">
-        <p class="hint" style="margin-top:0">A <b>program</b> (IAP) is a named group of <b>module titles</b>. Every enrollment in one of those modules is labelled with the program, so it appears under <b>Program</b> on the dashboard and can be used in user permissions. A module belongs to one program at a time.</p>
+        <p class="hint" style="margin-top:0">A <b>program</b> (IAP) is a named group of <b>Module IDs</b>. Every enrollment with one of those IDs is labelled with the program, so it appears under <b>Program</b> on the dashboard and can be used in user permissions. Each Module ID is its own selection (one title can have several IDs, e.g. IAP2025 and IAP2026) and belongs to one program at a time.</p>
         <div class="iapgrid">
           <label>Program<select id="iSel"></select></label>
           <label>Name<input id="iName" placeholder="IAP-2026" maxlength="60"></label>
@@ -890,11 +890,13 @@ const PROGRAM_MAP={
 const progSort=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'});
 function defaultPrograms(){ const o={}; for(const [t,p] of Object.entries(PROGRAM_MAP)) (o[p]=o[p]||[]).push(t);
   return Object.keys(o).map(n=>({name:n,mods:o[n]})).sort(progSort); }
-let PROGRAMS=defaultPrograms(), PMAP={};
+let PROGRAMS=defaultPrograms(), PMAP={}, PID={};
+/* A program lists Module IDs (ids). Older/original programs list module titles (mods); an ID listed anywhere wins over a title. */
 function setPrograms(list){
-  PROGRAMS=(Array.isArray(list)&&list.length?list:defaultPrograms()).map(p=>({name:String(p.name),mods:[...new Set(p.mods||[])]})).sort(progSort);
-  PMAP={}; for(const p of PROGRAMS) for(const t of p.mods) PMAP[t]=p.name;
+  PROGRAMS=(Array.isArray(list)&&list.length?list:defaultPrograms()).map(p=>({name:String(p.name),ids:[...new Set((p.ids||[]).map(String))],mods:[...new Set(p.mods||[])]})).sort(progSort);
+  PMAP={}; PID={}; for(const p of PROGRAMS){ for(const t of p.mods) PMAP[t]=p.name; for(const id of p.ids) PID[id]=p.name; }
 }
+function progName(id,title){ if(id!=null&&PID[id]!==undefined) return PID[id]; return title==null?undefined:PMAP[title]; }
 setPrograms(null);
 const BLANK="(Blank)";
 /* Saved report state from the PBIX: Lesson Status = completed, Completion Date >= 1/10/2025 */
@@ -931,8 +933,10 @@ function buildModel(raw){
   M.statuses=statuses;
   // Program Title (MODULE_SELECT)
   const progs=PROGRAMS.map(p=>p.name);
-  const tMap=M.modTitles.map(t=>{const p=PMAP[t];return p===undefined?-1:progs.indexOf(p);});
-  M.prog=new Int32Array(n); for(let i=0;i<n;i++) M.prog[i]=M.modTitle[i]<0?-1:tMap[M.modTitle[i]];
+  const pix=new Map(progs.map((p,k)=>[p,k]));
+  const idMap=mi.d.map(id=>{const p=PID[String(id)]; return p===undefined?-1:pix.get(p);});
+  const tMap=M.modTitles.map(t=>{const p=PMAP[t];return p===undefined?-1:pix.get(p);});
+  M.prog=new Int32Array(n); for(let i=0;i<n;i++){ const a=M.modId[i]>=0?idMap[M.modId[i]]:-1; M.prog[i]=a>=0?a:(M.modTitle[i]<0?-1:tMap[M.modTitle[i]]); }
   M.progs=progs;
   // Stable colour assignment (Power BI keeps colours per category)
   const locs=[...new Set(M.loc)].filter(v=>v>=0).sort((a,b)=>a-b);
@@ -1501,7 +1505,8 @@ function subsetRaw(raw,perms){
     if(Md.size||P.size){
       const ti=raw.modTitle.i[i]; const t=ti<0?null:raw.modTitle.d[ti];
       if(t===null) continue;
-      if(!(Md.has(t) || P.has(PMAP[t]))) continue;
+      const di=raw.modId.i[i];
+      if(!(Md.has(t) || P.has(progName(di<0?null:String(raw.modId.d[di]),t)))) continue;
     }
     keep.push(i);
   }
@@ -1694,7 +1699,7 @@ function rowsToRaw(rows,report){
     if(r['Online Module-Lesson Status']==='passed') report.passed++;
   }
   for(const k of ['first','last','jobTitle','modId','modTitle','status']) delete R[k].map;
-  report.unmapped=R.modTitle.d.filter(t=>PMAP[t]===undefined).length;
+  report.unmapped=R.modTitle.d.filter(t=>PMAP[t]===undefined).length;   // (titles only; IDs are matched when the model is built)
   return R;
 }
 
@@ -2858,31 +2863,28 @@ $('#wkExport').onclick=async()=>{
 };
 
 /* ---------------- Admin: Create IAP ---------------- */
-let IAP={cur:null,sel:new Set()};   // cur = program name being edited, null = new
+let IAP={cur:null,sel:new Set(),keepT:[]};   // cur = program name being edited, null = new
 function nextIapName(){
   let y=0; for(const p of PROGRAMS){ const m=/^IAP-?(\d{4})$/i.exec(p.name.trim()); if(m) y=Math.max(y,+m[1]); }
   y=y?y+1:new Date().getFullYear(); while(PROGRAMS.some(p=>p.name.toLowerCase()==='iap-'+y)) y++;
   return 'IAP-'+y;
 }
-function iapStats(){   // enrollments / completed per module title, from the full data
-  const raw=ADMIN.raw, cnt=new Map(), done=new Map();
+function iapIdx(){   // title -> [Module IDs] and Module ID -> title, from the full data
+  if(IAP_IDS&&IAP_IDS.raw===ADMIN.raw) return IAP_IDS;
+  const raw=ADMIN.raw, t2s=new Map(), i2t=new Map(), cnt=new Map(), done=new Map();
   const comp=raw.status.d.map(v=>v==='passed'||v==='completed');
-  for(let i=0;i<raw.empNo.length;i++){ const ti=raw.modTitle.i[i]; if(ti<0||raw.empNo[i]<0) continue;
-    cnt.set(ti,(cnt.get(ti)||0)+1); const si=raw.status.i[i]; if(si>=0&&comp[si]) done.set(ti,(done.get(ti)||0)+1); }
-  const byTitle=new Map(); raw.modTitle.d.forEach((t,k)=>byTitle.set(t,{n:cnt.get(k)||0,c:done.get(k)||0}));
-  return byTitle;
-}
-let IAP_STATS=null, IAP_IDS=null;
-function iapIds(){   // module title -> its module IDs, from the full data
-  if(IAP_IDS&&IAP_IDS.raw===ADMIN.raw) return IAP_IDS.map;
-  const raw=ADMIN.raw, m=new Map();
   for(let i=0;i<raw.modTitle.i.length;i++){ const ti=raw.modTitle.i[i], di=raw.modId.i[i]; if(ti<0||di<0) continue;
-    const t=raw.modTitle.d[ti], id=String(raw.modId.d[di]); let set=m.get(t); if(!set) m.set(t,set=new Set()); set.add(id); }
-  const map=new Map([...m].map(([t,set])=>[t,[...set].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))]));
-  IAP_IDS={raw,map}; return map;
+    const t=raw.modTitle.d[ti], id=String(raw.modId.d[di]);
+    if(!i2t.has(id)) i2t.set(id,t); let set=t2s.get(t); if(!set) t2s.set(t,set=new Set()); set.add(id);
+    if(raw.empNo[i]<0) continue; cnt.set(id,(cnt.get(id)||0)+1); const si=raw.status.i[i]; if(si>=0&&comp[si]) done.set(id,(done.get(id)||0)+1); }
+  const num=(a,b)=>a.localeCompare(b,undefined,{numeric:true});
+  const t2i=new Map([...t2s].map(([t,set])=>[t,[...set].sort(num)]));
+  const stats=new Map([...i2t.keys()].map(id=>[id,{n:cnt.get(id)||0,c:done.get(id)||0}]));
+  IAP_IDS={raw,t2i,i2t,stats,ids:[...i2t.keys()].sort(num)}; return IAP_IDS;
 }
+let IAP_IDS=null;
+function iapOwner(id){ return progName(id,iapIdx().i2t.get(id)); }
 function renderIap(keep){
-  IAP_STATS=iapStats();
   if(!keep){ if(IAP.cur!==null && !PROGRAMS.some(p=>p.name===IAP.cur)) IAP.cur=null;
     iapLoad(IAP.cur); }
   const sel=$('#iSel');
@@ -2893,34 +2895,50 @@ function renderIap(keep){
   iapList(); iapTable();
 }
 function iapLoad(name){
-  IAP.cur=name; const p=PROGRAMS.find(x=>x.name===name);
-  IAP.sel=new Set(p?p.mods:[]); $('#iName').value=p?p.name:nextIapName(); $('#iMsg').textContent=''; $('#iMsg').className='msg';
+  IAP.cur=name; const p=PROGRAMS.find(x=>x.name===name), X=iapIdx();
+  IAP.sel=new Set(); IAP.keepT=[];   // keepT: titles of an older program that are not in the current data
+  if(p){ for(const id of p.ids) IAP.sel.add(id);
+    for(const t of p.mods){ const l=X.t2i.get(t); if(l&&l.length){ for(const id of l) if(iapOwner(id)===p.name) IAP.sel.add(id); } else IAP.keepT.push(t); } }
+  $('#iName').value=p?p.name:nextIapName(); $('#iMsg').textContent=''; $('#iMsg').className='msg';
 }
 function iapList(){
-  const byId=$('#iBy').value==='id', only=$('#iOnlySel').checked, free=$('#iFree').checked;
+  const X=iapIdx(), byId=$('#iBy').value==='id', only=$('#iOnlySel').checked, free=$('#iFree').checked;
   const terms=$('#iSearch').value.toLowerCase().split(byId?/[\s,;]+/:/\n/).map(x=>x.trim()).filter(Boolean);   // by ID: paste several IDs
-  const titles=[...new Set([...ADMIN.raw.modTitle.d,...IAP.sel])].sort((a,b)=>a.localeCompare(b));
-  let items=titles.map(t=>({t,id:''}));
-  if(byId){ const ids=iapIds(); items=titles.map(t=>({t,id:(ids.get(t)||[]).join(', ')}));   // one row per module, all its IDs together
-    items.sort((a,b)=>(a.id||'\uffff').localeCompare(b.id||'\uffff',undefined,{numeric:true})||a.t.localeCompare(b.t)); }
-  const rows=[];
-  for(const {t,id} of items){
-    const on=IAP.sel.has(t), other=PMAP[t]&&PMAP[t]!==IAP.cur?PMAP[t]:null, st=IAP_STATS.get(t);
-    if(only&&!on) continue; if(free&&other&&!on) continue;
-    if(terms.length){ const hay=byId?id.toLowerCase():t.toLowerCase(); if(!terms.some(q=>hay.includes(q))) continue; }
-    rows.push('<label class="pk"><input type="checkbox" value="'+esc(t)+'"'+(on?' checked':'')+'>'+(byId?'<b class="mid" title="'+esc(id)+'">'+(id?esc(id):'—')+'</b>':'')+'<span>'+esc(t)+'</span>'+
-      (other?'<em class="other" title="Saving will move this module out of '+esc(other)+'">in '+esc(other)+'</em>':'')+
-      (st?'<em>'+nf.format(st.n)+' enrolled</em>':'<em class="gone" title="No enrollments for this module in the current data">not in current data</em>')+'</label>');
+  const rows=[], others=ids=>[...new Set(ids.map(iapOwner).filter(o=>o&&o!==IAP.cur))];
+  const statOf=ids=>ids.reduce((a,id)=>{const s=X.stats.get(id); if(s){a.n+=s.n;} return a;},{n:0});
+  if(byId){
+    const ids=[...new Set([...X.ids,...IAP.sel])];
+    for(const id of ids){ const t=X.i2t.get(id)||'', on=IAP.sel.has(id), oth=others([id]), st=X.stats.get(id);
+      if(only&&!on) continue; if(free&&oth.length&&!on) continue; if(terms.length&&!terms.some(q=>id.toLowerCase().includes(q))) continue;
+      rows.push('<label class="pk"><input type="checkbox" data-id="'+esc(id)+'"'+(on?' checked':'')+'><b class="mid" title="'+esc(id)+'">'+esc(id)+'</b><span>'+esc(t)+'</span>'+
+        (oth.length?'<em class="other" title="Saving will move this Module ID out of '+esc(oth[0])+'">in '+esc(oth[0])+'</em>':'')+
+        (st?'<em>'+nf.format(st.n)+' enrolled</em>':'<em class="gone">not in current data</em>')+'</label>'); }
+  } else {
+    const titles=[...new Set([...X.t2i.keys(),...IAP.keepT])].sort((a,b)=>a.localeCompare(b));
+    for(const t of titles){ const ids=X.t2i.get(t)||[], k=ids.filter(id=>IAP.sel.has(id)).length;
+      const on=ids.length?k===ids.length:IAP.keepT.includes(t), part=k>0&&k<ids.length, oth=others(ids.filter(id=>!IAP.sel.has(id))), st=statOf(ids);
+      if(only&&!on&&!part) continue; if(free&&oth.length&&!on&&!part) continue; if(terms.length&&!t.toLowerCase().includes(terms[0])) continue;
+      rows.push('<label class="pk"><input type="checkbox" data-t="'+esc(t)+'"'+(on?' checked':'')+(part?' data-part="1"':'')+'><span>'+esc(t)+
+        (ids.length>1?' <small style="color:#5A6478">('+(part?k+' of ':'')+ids.length+' IDs'+(part?' ticked':'')+')</small>':'')+'</span>'+
+        (oth.length?'<em class="other" title="Saving will move it out of '+esc(oth.join(', '))+'">in '+esc(oth.join(', '))+'</em>':'')+
+        (ids.length?'<em>'+nf.format(st.n)+' enrolled</em>':'<em class="gone" title="No enrollments for this module in the current data">not in current data</em>')+'</label>'); }
   }
   $('#iList').innerHTML=rows.length?rows.join(''):'<div class="more">No modules match.</div>';
-  $('#iList').querySelectorAll('input').forEach(c=>c.onchange=()=>{ c.checked?IAP.sel.add(c.value):IAP.sel.delete(c.value);
+  $('#iList').querySelectorAll('input[data-part]').forEach(c=>c.indeterminate=true);
+  $('#iList').querySelectorAll('input').forEach(c=>c.onchange=()=>{
+    if(c.dataset.id!==undefined){ c.checked?IAP.sel.add(c.dataset.id):IAP.sel.delete(c.dataset.id); }
+    else { const t=c.dataset.t, ids=X.t2i.get(t)||[];
+      if(ids.length) ids.forEach(id=>c.checked?IAP.sel.add(id):IAP.sel.delete(id));
+      else { IAP.keepT=IAP.keepT.filter(x=>x!==t); if(c.checked) IAP.keepT.push(t); }
+      c.indeterminate=false; }
     iapCount(); });
   iapCount();
 }
-function iapCount(){ $('#iCount').textContent=IAP.sel.size+' selected'; }
+function iapCount(){ const n=IAP.sel.size+IAP.keepT.length; $('#iCount').textContent=n+' Module ID'+(n===1?'':'s')+' selected'; }
 function iapTable(){
-  const tot=p=>p.mods.reduce((a,t)=>{const s=IAP_STATS.get(t); if(s){a.n+=s.n;a.c+=s.c;} return a;},{n:0,c:0});
-  $('#iTbl').innerHTML=PROGRAMS.map(p=>{const t=tot(p); return '<tr'+(p.name===IAP.cur?' class="cur"':'')+'><td>'+esc(p.name)+'</td><td class="n">'+p.mods.length+'</td><td class="n">'+nf.format(t.n)+'</td><td class="n">'+nf.format(t.c)+'</td><td class="act"><button class="ed" data-p="'+esc(p.name)+'">Edit</button><button class="dl" data-p="'+esc(p.name)+'">Delete</button></td></tr>';}).join('');
+  const X=iapIdx(), per=PROGRAMS.map(()=>({ids:new Set(),n:0,c:0}));
+  for(const id of X.ids){ const o=iapOwner(id); if(o===undefined) continue; const k=PROGRAMS.findIndex(p=>p.name===o); if(k<0) continue; const st=X.stats.get(id); per[k].ids.add(id); per[k].n+=st.n; per[k].c+=st.c; }
+  $('#iTbl').innerHTML=PROGRAMS.map((p,k)=>{const t=per[k]; return '<tr'+(p.name===IAP.cur?' class="cur"':'')+'><td>'+esc(p.name)+'</td><td class="n">'+t.ids.size+'</td><td class="n">'+nf.format(t.n)+'</td><td class="n">'+nf.format(t.c)+'</td><td class="act"><button class="ed" data-p="'+esc(p.name)+'">Edit</button><button class="dl" data-p="'+esc(p.name)+'">Delete</button></td></tr>';}).join('');
   $('#iTbl').querySelectorAll('button.ed').forEach(b=>b.onclick=()=>{ iapLoad(b.dataset.p); renderIap(true); $('#iSel').scrollIntoView({behavior:'smooth',block:'start'}); $('#iName').focus(); iapMsg('Editing '+b.dataset.p+': change the name or ticked modules, then click Save program.',true); });
   $('#iTbl').querySelectorAll('button.dl').forEach(b=>b.onclick=()=>iapDelete(b.dataset.p));
 }
@@ -2932,23 +2950,27 @@ function iapApply(list,renames,removed){
 }
 function iapMsg(t,ok){ $('#iMsg').textContent=t; $('#iMsg').className='msg '+(ok?'ok':'bad'); }
 $('#iSel').onchange=e=>{ iapLoad(e.target.value||null); renderIap(true); };
-$('#iSearch').oninput=iapList;
-$('#iBy').onchange=()=>{ const id=$('#iBy').value==='id'; $('#iSearch').placeholder=id?'Search or paste module IDs (separate several with spaces or commas)':'Search module titles (e.g. Ethics, Harassment, 2026)'; iapList(); }; $('#iOnlySel').onchange=iapList; $('#iFree').onchange=iapList;
-$('#iClear').onclick=()=>{ IAP.sel.clear(); iapList(); };
+$('#iSearch').oninput=iapList; $('#iOnlySel').onchange=iapList; $('#iFree').onchange=iapList;
+$('#iBy').onchange=()=>{ const id=$('#iBy').value==='id'; $('#iSearch').placeholder=id?'Search or paste module IDs (separate several with spaces or commas)':'Search module titles (e.g. Ethics, Harassment, 2026)'; iapList(); };
+$('#iClear').onclick=()=>{ IAP.sel.clear(); IAP.keepT=[]; iapList(); };
 $('#iSave').onclick=async ()=>{
-  const name=$('#iName').value.replace(/\s+/g,' ').trim();
+  const name=$('#iName').value.replace(/\s+/g,' ').trim(), X=iapIdx(), sel=IAP.sel;
   if(!name) return iapMsg('Enter a name for the program, e.g. '+nextIapName()+'.');
   if(PROGRAMS.some(p=>p.name.toLowerCase()===name.toLowerCase()&&p.name!==IAP.cur)) return iapMsg('A program called "'+name+'" already exists. Choose it from the Program list to edit it.');
-  if(!IAP.sel.size) return iapMsg('Tick at least one module title for this program.');
-  const moves=[...IAP.sel].filter(t=>PMAP[t]&&PMAP[t]!==IAP.cur);
-  if(moves.length){ const from=[...new Set(moves.map(t=>PMAP[t]))].join(', ');
-    if(!await uiConfirm(moves.length+' module(s) will move out of '+from+' into '+name+':\n\n'+moves.slice(0,12).join('\n')+(moves.length>12?'\n…':'')+'\n\nContinue?')) return; }
-  const list=PROGRAMS.map(p=>({name:p.name,mods:p.mods.filter(t=>!IAP.sel.has(t))})).filter(p=>p.name!==IAP.cur);
-  list.push({name,mods:[...IAP.sel]});
+  if(!sel.size&&!IAP.keepT.length) return iapMsg('Tick at least one module for this program.');
+  const moves=[...sel].filter(id=>{const o=iapOwner(id); return o&&o!==IAP.cur;});
+  if(moves.length){ const from=[...new Set(moves.map(iapOwner))].join(', ');
+    if(!await uiConfirm(moves.length+' Module ID(s) will move out of '+from+' into '+name+':\n\n'+moves.slice(0,12).map(id=>id+' — '+(X.i2t.get(id)||'')).join('\n')+(moves.length>12?'\n…':'')+'\n\nContinue?')) return; }
+  // every program is saved by Module ID from now on (titles are kept only when they are not in the current data)
+  const list=PROGRAMS.filter(p=>p.name!==IAP.cur).map(p=>{ const ids=new Set(p.ids.filter(id=>!sel.has(id))), mods=[];
+    for(const t of p.mods){ const l=X.t2i.get(t); if(l&&l.length){ for(const id of l) if(!sel.has(id)&&iapOwner(id)===p.name) ids.add(id); } else mods.push(t); }
+    return {name:p.name,ids:[...ids],mods}; });
+  list.push({name,ids:[...sel],mods:IAP.keepT.filter(t=>!X.t2i.has(t))});
   const renames={}; if(IAP.cur&&IAP.cur!==name) renames[IAP.cur]=name;
-  const was=IAP.cur, nUsers=ADMIN.users.filter(u=>u.perms&&u.perms.progs&&u.perms.progs.includes(was)).length; iapApply(list,renames,[]); IAP.cur=name; renderIap(true);
-  const emptied=PROGRAMS.filter(p=>!p.mods.length).map(p=>p.name);
-  iapMsg((was===null?'Created ':'Saved ')+name+' with '+IAP.sel.size+' module(s).'+(renames[was]&&nUsers?' '+nUsers+' user(s) who had "'+was+'" now have "'+name+'".':'')+
+  const was=IAP.cur, nUsers=ADMIN.users.filter(u=>u.perms&&u.perms.progs&&u.perms.progs.includes(was)).length, nSel=sel.size+IAP.keepT.length;
+  iapApply(list,renames,[]); IAP.cur=name; iapLoad(name); renderIap(true);
+  const emptied=PROGRAMS.filter(p=>!p.ids.length&&!p.mods.length).map(p=>p.name);
+  iapMsg((was===null?'Created ':'Saved ')+name+' with '+nSel+' Module ID(s).'+(renames[was]&&nUsers?' '+nUsers+' user(s) who had "'+was+'" now have "'+name+'".':'')+
     (emptied.length?'\nNote: '+emptied.join(', ')+' now has no modules.':'')+'\nClick Publish to send this to everyone.',true);
 };
 $('#iDel').onclick=()=>{ if(IAP.cur!==null) iapDelete(IAP.cur); };
@@ -3955,7 +3977,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=async ()=>{ if(!await uiConfirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-18.2';
+const APP_VERSION='2026-11-18.3';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
