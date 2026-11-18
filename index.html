@@ -473,6 +473,12 @@
   #iList .pk span{flex:1}
   #iList .pk em{font-style:normal;font-size:11px;font-weight:700;color:#5A6478;white-space:nowrap}
   #iList .pk em.other{color:#C4521F}
+  #iList .pk b.mid{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#1F4E8C;width:200px;flex:0 0 200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .iaptools select#iBy{font-size:13px;padding:6px 8px;border:1px solid #C9D3E3;border-radius:6px}
+  .iaptbl td.act{white-space:nowrap;text-align:right}
+  .iaptbl td.act button{font:inherit;font-size:12px;font-weight:600;border:1px solid #C9D3E3;background:#fff;border-radius:5px;padding:3px 10px;cursor:pointer;margin-left:6px}
+  .iaptbl td.act button.ed{color:#1F4E8C}.iaptbl td.act button.ed:hover{background:#EAF1FB}
+  .iaptbl td.act button.dl{color:#B3261E;border-color:#E9C3C0}.iaptbl td.act button.dl:hover{background:#FCECEA}
   #iList .pk em.gone{color:#8E99AB}
   .iapbar{display:flex;gap:10px;align-items:center;margin-top:12px}
   .iaptbl{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
@@ -702,6 +708,7 @@
         </div>
         <div class="ph" style="border:1px solid #DCE3EE;border-bottom:none;border-radius:8px 8px 0 0">Modules in this program <span id="iCount"></span><button class="pclear" id="iClear">Clear</button></div>
         <div class="iaptools">
+          <label class="inline">Choose by <select id="iBy"><option value="title">Module title</option><option value="id">Module ID</option></select></label>
           <input id="iSearch" placeholder="Search module titles (e.g. Ethics, Harassment, 2026)">
           <label class="inline"><input type="checkbox" id="iOnlySel"> Show only selected</label>
           <label class="inline"><input type="checkbox" id="iFree"> Hide modules already in another program</label>
@@ -710,7 +717,7 @@
         <div class="iapbar"><button id="iSave" class="primary">Save program</button><button id="iDel" class="link">Delete program</button><button id="iReset" class="link" style="color:#1F4E8C">Restore original programs</button></div>
         <div id="iMsg" class="msg"></div>
         <h3 class="sect">All programs</h3>
-        <table class="iaptbl"><thead><tr><th>Program</th><th style="text-align:right">Modules</th><th style="text-align:right">Enrollments</th><th style="text-align:right">Completed</th></tr></thead><tbody id="iTbl"></tbody></table>
+        <table class="iaptbl"><thead><tr><th>Program</th><th style="text-align:right">Modules</th><th style="text-align:right">Enrollments</th><th style="text-align:right">Completed</th><th></th></tr></thead><tbody id="iTbl"></tbody></table>
         <p class="hint">Changes show on your dashboard right away. Click <b>Publish</b> to send them to everyone.</p>
       </div>
       <div class="admPane" data-t="week">
@@ -2865,7 +2872,15 @@ function iapStats(){   // enrollments / completed per module title, from the ful
   const byTitle=new Map(); raw.modTitle.d.forEach((t,k)=>byTitle.set(t,{n:cnt.get(k)||0,c:done.get(k)||0}));
   return byTitle;
 }
-let IAP_STATS=null;
+let IAP_STATS=null, IAP_IDS=null;
+function iapIds(){   // module title -> its module IDs, from the full data
+  if(IAP_IDS&&IAP_IDS.raw===ADMIN.raw) return IAP_IDS.map;
+  const raw=ADMIN.raw, m=new Map();
+  for(let i=0;i<raw.modTitle.i.length;i++){ const ti=raw.modTitle.i[i], di=raw.modId.i[i]; if(ti<0||di<0) continue;
+    const t=raw.modTitle.d[ti], id=String(raw.modId.d[di]); let set=m.get(t); if(!set) m.set(t,set=new Set()); set.add(id); }
+  const map=new Map([...m].map(([t,set])=>[t,[...set].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))]));
+  IAP_IDS={raw,map}; return map;
+}
 function renderIap(keep){
   IAP_STATS=iapStats();
   if(!keep){ if(IAP.cur!==null && !PROGRAMS.some(p=>p.name===IAP.cur)) IAP.cur=null;
@@ -2882,24 +2897,33 @@ function iapLoad(name){
   IAP.sel=new Set(p?p.mods:[]); $('#iName').value=p?p.name:nextIapName(); $('#iMsg').textContent=''; $('#iMsg').className='msg';
 }
 function iapList(){
-  const q=$('#iSearch').value.trim().toLowerCase(), only=$('#iOnlySel').checked, free=$('#iFree').checked;
+  const byId=$('#iBy').value==='id', only=$('#iOnlySel').checked, free=$('#iFree').checked;
+  const terms=$('#iSearch').value.toLowerCase().split(byId?/[\s,;]+/:/\n/).map(x=>x.trim()).filter(Boolean);   // by ID: paste several IDs
   const titles=[...new Set([...ADMIN.raw.modTitle.d,...IAP.sel])].sort((a,b)=>a.localeCompare(b));
+  let items=titles.map(t=>({t,id:''}));
+  if(byId){ const ids=iapIds(); items=[]; for(const t of titles){ const l=ids.get(t); if(l&&l.length) for(const id of l) items.push({t,id}); else items.push({t,id:''}); }
+    items.sort((a,b)=>(a.id||'\uffff').localeCompare(b.id||'\uffff',undefined,{numeric:true})||a.t.localeCompare(b.t)); }
   const rows=[];
-  for(const t of titles){
+  for(const {t,id} of items){
     const on=IAP.sel.has(t), other=PMAP[t]&&PMAP[t]!==IAP.cur?PMAP[t]:null, st=IAP_STATS.get(t);
-    if(only&&!on) continue; if(free&&other&&!on) continue; if(q&&!t.toLowerCase().includes(q)) continue;
-    rows.push('<label class="pk"><input type="checkbox" value="'+esc(t)+'"'+(on?' checked':'')+'><span>'+esc(t)+'</span>'+
+    if(only&&!on) continue; if(free&&other&&!on) continue;
+    if(terms.length){ const hay=byId?id.toLowerCase():t.toLowerCase(); if(!terms.some(q=>hay.includes(q))) continue; }
+    rows.push('<label class="pk"><input type="checkbox" value="'+esc(t)+'"'+(on?' checked':'')+'>'+(byId?'<b class="mid">'+(id?esc(id):'—')+'</b>':'')+'<span>'+esc(t)+'</span>'+
       (other?'<em class="other" title="Saving will move this module out of '+esc(other)+'">in '+esc(other)+'</em>':'')+
       (st?'<em>'+nf.format(st.n)+' enrolled</em>':'<em class="gone" title="No enrollments for this module in the current data">not in current data</em>')+'</label>');
   }
-  $('#iList').innerHTML=rows.length?rows.join(''):'<div class="more">No module titles match.</div>';
-  $('#iList').querySelectorAll('input').forEach(c=>c.onchange=()=>{ c.checked?IAP.sel.add(c.value):IAP.sel.delete(c.value); iapCount(); });
+  $('#iList').innerHTML=rows.length?rows.join(''):'<div class="more">No modules match.</div>';
+  $('#iList').querySelectorAll('input').forEach(c=>c.onchange=()=>{ c.checked?IAP.sel.add(c.value):IAP.sel.delete(c.value);
+    $('#iList').querySelectorAll('input').forEach(o=>{ if(o.value===c.value) o.checked=c.checked; });   // same title under another ID
+    iapCount(); });
   iapCount();
 }
 function iapCount(){ $('#iCount').textContent=IAP.sel.size+' selected'; }
 function iapTable(){
   const tot=p=>p.mods.reduce((a,t)=>{const s=IAP_STATS.get(t); if(s){a.n+=s.n;a.c+=s.c;} return a;},{n:0,c:0});
-  $('#iTbl').innerHTML=PROGRAMS.map(p=>{const t=tot(p); return '<tr'+(p.name===IAP.cur?' class="cur"':'')+'><td>'+esc(p.name)+'</td><td class="n">'+p.mods.length+'</td><td class="n">'+nf.format(t.n)+'</td><td class="n">'+nf.format(t.c)+'</td></tr>';}).join('');
+  $('#iTbl').innerHTML=PROGRAMS.map(p=>{const t=tot(p); return '<tr'+(p.name===IAP.cur?' class="cur"':'')+'><td>'+esc(p.name)+'</td><td class="n">'+p.mods.length+'</td><td class="n">'+nf.format(t.n)+'</td><td class="n">'+nf.format(t.c)+'</td><td class="act"><button class="ed" data-p="'+esc(p.name)+'">Edit</button><button class="dl" data-p="'+esc(p.name)+'">Delete</button></td></tr>';}).join('');
+  $('#iTbl').querySelectorAll('button.ed').forEach(b=>b.onclick=()=>{ iapLoad(b.dataset.p); renderIap(true); $('#iSel').scrollIntoView({behavior:'smooth',block:'start'}); $('#iName').focus(); iapMsg('Editing '+b.dataset.p+': change the name or ticked modules, then click Save program.',true); });
+  $('#iTbl').querySelectorAll('button.dl').forEach(b=>b.onclick=()=>iapDelete(b.dataset.p));
 }
 function iapApply(list,renames,removed){
   setPrograms(list);
@@ -2909,7 +2933,8 @@ function iapApply(list,renames,removed){
 }
 function iapMsg(t,ok){ $('#iMsg').textContent=t; $('#iMsg').className='msg '+(ok?'ok':'bad'); }
 $('#iSel').onchange=e=>{ iapLoad(e.target.value||null); renderIap(true); };
-$('#iSearch').oninput=iapList; $('#iOnlySel').onchange=iapList; $('#iFree').onchange=iapList;
+$('#iSearch').oninput=iapList;
+$('#iBy').onchange=()=>{ const id=$('#iBy').value==='id'; $('#iSearch').placeholder=id?'Search or paste module IDs (separate several with spaces or commas)':'Search module titles (e.g. Ethics, Harassment, 2026)'; iapList(); }; $('#iOnlySel').onchange=iapList; $('#iFree').onchange=iapList;
 $('#iClear').onclick=()=>{ IAP.sel.clear(); iapList(); };
 $('#iSave').onclick=async ()=>{
   const name=$('#iName').value.replace(/\s+/g,' ').trim();
@@ -2927,12 +2952,12 @@ $('#iSave').onclick=async ()=>{
   iapMsg((was===null?'Created ':'Saved ')+name+' with '+IAP.sel.size+' module(s).'+(renames[was]&&nUsers?' '+nUsers+' user(s) who had "'+was+'" now have "'+name+'".':'')+
     (emptied.length?'\nNote: '+emptied.join(', ')+' now has no modules.':'')+'\nClick Publish to send this to everyone.',true);
 };
-$('#iDel').onclick=async ()=>{
-  if(IAP.cur===null) return; const name=IAP.cur;
+$('#iDel').onclick=()=>{ if(IAP.cur!==null) iapDelete(IAP.cur); };
+async function iapDelete(name){
   const users=ADMIN.users.filter(u=>u.perms&&u.perms.progs&&u.perms.progs.includes(name)).length;
   if(!await uiConfirm('Delete the program "'+name+'"? Its modules will no longer have a program'+(users?' and it will be removed from '+users+' user(s) permissions':'')+'.')) return;
-  iapApply(PROGRAMS.filter(p=>p.name!==name),{},[name]); IAP.cur=null; renderIap(); iapMsg('Deleted '+name+'. Click Publish to send this to everyone.',true);
-};
+  iapApply(PROGRAMS.filter(p=>p.name!==name),{},[name]); if(IAP.cur===name) IAP.cur=null; renderIap(); iapMsg('Deleted '+name+'. Click Publish to send this to everyone.',true);
+}
 $('#iReset').onclick=async ()=>{
   if(!await uiConfirm('Replace all programs with the original IAP-2023, IAP-2024, IAP-2025 and Nursing Orientation lists from the Power BI report?')) return;
   const keep=new Set(defaultPrograms().map(p=>p.name)); const removed=PROGRAMS.map(p=>p.name).filter(n=>!keep.has(n));
@@ -3931,7 +3956,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=async ()=>{ if(!await uiConfirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-17.3';
+const APP_VERSION='2026-11-18.1';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
