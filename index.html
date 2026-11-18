@@ -1067,10 +1067,14 @@ function filterItems(sl){
 const ROWH=24;
 /* Choosing IAP-YYYY (or its Summary / Details) sets Date (Enrollment) to 11/01/YYYY – 10/31/YYYY+1; clearing it puts the previous dates back */
 let PROG_DW=null;
+function iapWindow(name){   // IAP-YYYY -> [11/01/YYYY, 10/31/YYYY+1] in days, otherwise null
+  const m=name&&/^IAP[\s-]?(\d{4})\b/i.exec(String(name).trim()); if(!m) return null; const y=+m[1];
+  return [Date.UTC(y,10,1)/864e5, Date.UTC(y+1,9,31)/864e5];
+}
 function progDateWindow(){
-  let y=null;
-  if(S.prog.size===1){ const k=[...S.prog][0], name=M.progs[k>=SUMK?k-SUMK:k]; const m=name&&/^IAP[\s-]?(\d{4})\b/i.exec(name.trim()); if(m) y=+m[1]; }
-  if(y!==null){ const f=Date.UTC(y,10,1)/864e5, t=Date.UTC(y+1,9,31)/864e5;
+  let w=null;
+  if(S.prog.size===1){ const k=[...S.prog][0]; w=iapWindow(M.progs[k>=SUMK?k-SUMK:k]); }
+  if(w){ const f=w[0], t=w[1];
     if(!PROG_DW) PROG_DW={prevFrom:S.dFrom,prevTo:S.dTo};
     S.dFrom=f; S.dTo=t; PROG_DW.from=f; PROG_DW.to=t; }
   else if(PROG_DW){ if(S.dFrom===PROG_DW.from&&S.dTo===PROG_DW.to){ S.dFrom=PROG_DW.prevFrom; S.dTo=PROG_DW.prevTo; } PROG_DW=null; }
@@ -1518,7 +1522,9 @@ function subsetRaw(raw,perms){
       const ti=raw.modTitle.i[i]; const t=ti<0?null:raw.modTitle.d[ti];
       if(t===null) continue;
       const di=raw.modId.i[i];
-      if(!(Md.has(t) || P.has(progName(di<0?null:String(raw.modId.d[di]),t)))) continue;
+      if(!Md.has(t)){   // allowed through a program: IAP-YYYY only covers enrollments 11/01/YYYY - 10/31/YYYY+1
+        const pn=progName(di<0?null:String(raw.modId.d[di]),t); if(!P.has(pn)) continue;
+        const w=iapWindow(pn); if(w){ const d=raw.enroll[i]; if(d==null||d<0||d<w[0]||d>w[1]) continue; } }
     }
     keep.push(i);
   }
@@ -3991,7 +3997,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=async ()=>{ if(!await uiConfirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-18.7';
+const APP_VERSION='2026-11-18.8';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
