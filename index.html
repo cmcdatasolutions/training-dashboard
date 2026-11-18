@@ -1065,12 +1065,12 @@ function filterItems(sl){
   sl.filtered=q?sl.items.filter(it=>it.label.toLowerCase().includes(q)):sl.items;
 }
 const ROWH=24;
-/* Choosing IAP-YYYY (or its Summary / Details) sets Date (Enrollment) to 11/01/YYYY – 10/30/YYYY+1; clearing it puts the previous dates back */
+/* Choosing IAP-YYYY (or its Summary / Details) sets Date (Enrollment) to 11/01/YYYY – 10/31/YYYY+1; clearing it puts the previous dates back */
 let PROG_DW=null;
 function progDateWindow(){
   let y=null;
   if(S.prog.size===1){ const k=[...S.prog][0], name=M.progs[k>=SUMK?k-SUMK:k]; const m=name&&/^IAP[\s-]?(\d{4})\b/i.exec(name.trim()); if(m) y=+m[1]; }
-  if(y!==null){ const f=Date.UTC(y,10,1)/864e5, t=Date.UTC(y+1,9,30)/864e5;
+  if(y!==null){ const f=Date.UTC(y,10,1)/864e5, t=Date.UTC(y+1,9,31)/864e5;
     if(!PROG_DW) PROG_DW={prevFrom:S.dFrom,prevTo:S.dTo};
     S.dFrom=f; S.dTo=t; PROG_DW.from=f; PROG_DW.to=t; }
   else if(PROG_DW){ if(S.dFrom===PROG_DW.from&&S.dTo===PROG_DW.to){ S.dFrom=PROG_DW.prevFrom; S.dTo=PROG_DW.prevTo; } PROG_DW=null; }
@@ -3988,7 +3988,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=async ()=>{ if(!await uiConfirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-18.4';
+const APP_VERSION='2026-11-18.5';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
