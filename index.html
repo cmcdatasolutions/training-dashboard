@@ -3585,7 +3585,9 @@ function showView(v){
   VIEW=v; closePops(); hideTip();
   document.querySelector('#toolbar .ttl').textContent=v==='ca'?'Corrective Action Dashboard':v==='wd'?'Workday':'Training & Development Dashboard';
   C.style.display=v==='td'?'':'none'; CC.style.display=v==='ca'?'':'none'; wdShow(v==='wd');
-  for(const id of ['btnDefault','btnClear']) document.getElementById(id).style.display=v==='wd'?'none':'';
+  const P0=SESSION&&SESSION.profile, dashAdm=!P0||P0.role==='admin'||!!admOf(P0.perms||{})[v];   // viewers don't get Reset to default
+  document.getElementById('btnClear').style.display=v==='wd'?'none':'';
+  document.getElementById('btnDefault').style.display=v==='wd'||!dashAdm?'none':'';
   document.getElementById('btnWeek').style.display=v==='ca'&&SESSION&&(SESSION.profile.role==='admin'||admOf(SESSION.profile.perms).ca)?'':'none';
   renderDashSelects(); fit(); renderMeta();
   if(v==='ca') caUpdate();
@@ -3989,7 +3991,7 @@ $('#wSave').onclick=async()=>{
 $('#wClear').onclick=async ()=>{ if(!await uiConfirm('Disconnect the Workday repository? Nobody will be able to see or update Workday tasks after you publish.')) return; ADMIN.wdRepo=null; WD.repo=null; markDirty(); renderWdRepo(); $('#wMsg').textContent=''; };
 
 /* ---------------- Auto-update: reload when a newer version of this page is published ---------------- */
-const APP_VERSION='2026-11-18.6';
+const APP_VERSION='2026-11-18.7';
 async function checkAppVersion(){
   try{
     const r=await fetch('app.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return false;
